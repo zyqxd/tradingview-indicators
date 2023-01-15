@@ -1,0 +1,148 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © itsdeezy
+// derived the screener logic from @ KivancOzbilgic
+//@version=4
+
+study("Supertrend", shorttitle="DzSt", overlay=true)
+
+periods = input(title="ATR period", type=input.integer, defval=10)
+src = input(hl2, title="Source")
+multiplier = input(title="ATR multiplier", type=input.float, step=0.1, defval=3.0)
+changeATR= input(title="Change ATR Calculation Method ?", type=input.bool, defval=true)
+showsignals = input(title="Show Buy/Sell Signals ?", type=input.bool, defval=true)
+highlighting = input(title="Highlighter On/Off ?", type=input.bool, defval=true)
+
+sym01  = input('BTC1!', title=input.symbol)
+sym02  = input('ETH1!', title=input.symbol)
+sym03  = input('BYBIT:BTCUSDT.P', title=input.symbol)
+sym04  = input('BYBIT:ETHUSDT.P', title=input.symbol)
+sym05  = input('BYBIT:LINKUSDT.P', title=input.symbol)
+sym06  = input('BYBIT:SOLUSDT.P', title=input.symbol)
+sym07  = input('BYBIT:ADAUSDT', title=input.symbol)
+sym08  = input('BYBIT:DOTUSDT', title=input.symbol)
+sym09  = input('SQ', title=input.symbol)
+sym10 = input('NVDA', title=input.symbol)
+
+atr2 = sma(tr, periods)
+atr= changeATR ? atr(periods) : atr2
+up=src-(multiplier*atr)
+up1 = nz(up[1],up)
+up := close[1] > up1 ? max(up,up1) : up
+dn=src+(multiplier*atr)
+dn1 = nz(dn[1], dn)
+dn := close[1] < dn1 ? min(dn, dn1) : dn
+trend = 1
+trend := nz(trend[1], trend)
+trend := trend == -1 and close > dn1 ? 1 : trend == 1 and close < up1 ? -1 : trend
+upPlot = plot(trend == 1 ? up : na, title="Up Trend", style=plot.style_linebr, linewidth=2, color=color.green)
+buySignal = trend == 1 and trend[1] == -1
+plotshape(buySignal ? up : na, title="UpTrend Begins", location=location.absolute, style=shape.circle, size=size.tiny, color=color.green, transp=0)
+plotshape(buySignal and showsignals ? up : na, title="Buy", text="Buy", location=location.absolute, style=shape.labelup, size=size.tiny, color=color.green, textcolor=color.white, transp=0)
+dnPlot = plot(trend == 1 ? na : dn, title="Down Trend", style=plot.style_linebr, linewidth=2, color=color.red)
+sellSignal = trend == -1 and trend[1] == 1
+plotshape(sellSignal ? dn : na, title="DownTrend Begins", location=location.absolute, style=shape.circle, size=size.tiny, color=color.red, transp=0)
+plotshape(sellSignal and showsignals ? dn : na, title="Sell", text="Sell", location=location.absolute, style=shape.labeldown, size=size.tiny, color=color.red, textcolor=color.white, transp=0)
+mPlot = plot(ohlc4, title="", style=plot.style_circles, linewidth=0)
+longFillColor = highlighting ? (trend == 1 ? color.green : color.white) : color.white
+shortFillColor = highlighting ? (trend == -1 ? color.red : color.white) : color.white
+fill(mPlot, upPlot, title="UpTrend Highligter", color=longFillColor)
+fill(mPlot, dnPlot, title="DownTrend Highligter", color=shortFillColor)
+alertcondition(buySignal, title="SuperTrend Buy", message="SuperTrend Buy!")
+alertcondition(sellSignal, title="SuperTrend Sell", message="SuperTrend Sell!")
+changeCond = trend != trend[1]
+alertcondition(changeCond, title="SuperTrend Direction Change", message="SuperTrend has changed direction!")
+showscr = input(true, title="Show Screener Label")
+
+posX_scr = input(20, title="Pos. Label x-axis")
+posY_scr = input(1, title="Pos. Size Label y-axis")
+
+col = color.blue
+
+Supertrend(multiplier, periods) =>
+    Up=hl2-(multiplier*atr)
+    Dn=hl2+(multiplier*atr)
+
+    TrendUp = 0.0
+    TrendUp := close[1]>TrendUp[1] ? max(Up,TrendUp[1]) : Up
+    TrendDown = 0.0
+    TrendDown := close[1]<TrendDown[1]? min(Dn,TrendDown[1]) : Dn
+    Trend = 0.0
+    Trend := close > TrendDown[1] ? 1: close< TrendUp[1]? -1: nz(Trend[1],1)
+    Tsl = Trend==1? TrendUp: TrendDown
+
+    S_Buy = Trend == 1 ? 1 : 0
+    S_Sell = Trend != 1 ? 1 : 0
+
+    [Trend, Tsl]
+
+[Trend, Tsl] = Supertrend(multiplier, periods)
+TrendReversal = Trend != Trend[1]
+
+[t01, s01] = security(sym01, timeframe.period, Supertrend(multiplier, periods))
+[t02, s02] = security(sym02, timeframe.period, Supertrend(multiplier, periods))
+[t03, s03] = security(sym03, timeframe.period, Supertrend(multiplier, periods))
+[t04, s04] = security(sym04, timeframe.period, Supertrend(multiplier, periods))
+[t05, s05] = security(sym05, timeframe.period, Supertrend(multiplier, periods))
+[t06, s06] = security(sym06, timeframe.period, Supertrend(multiplier, periods))
+[t07, s07] = security(sym07, timeframe.period, Supertrend(multiplier, periods))
+[t08, s08] = security(sym08, timeframe.period, Supertrend(multiplier, periods))
+[t09, s09] = security(sym09, timeframe.period, Supertrend(multiplier, periods))
+[t10, s10] = security(sym10, timeframe.period, Supertrend(multiplier, periods))
+
+tr01 = t01 != t01[1], up01 = t01 == 1, dn01 = t01 == -1
+tr02 = t02 != t02[1], up02 = t02 == 1, dn02 = t02 == -1
+tr03 = t03 != t03[1], up03 = t03 == 1, dn03 = t03 == -1
+tr04 = t04 != t04[1], up04 = t04 == 1, dn04 = t04 == -1
+tr05 = t05 != t05[1], up05 = t05 == 1, dn05 = t05 == -1
+tr06 = t06 != t06[1], up06 = t06 == 1, dn06 = t06 == -1
+tr07 = t07 != t07[1], up07 = t07 == 1, dn07 = t07 == -1
+tr08 = t08 != t08[1], up08 = t08 == 1, dn08 = t08 == -1
+tr09 = t09 != t09[1], up09 = t09 == 1, dn09 = t09 == -1
+tr10 = t10 != t10[1], up10 = t10 == 1, dn10 = t10 == -1
+
+pot_label = 'Potential Reversal: \n'
+pot_label := tr01     ? pot_label + sym01  + '\n'  : pot_label
+pot_label := tr02     ? pot_label + sym02  + '\n'  : pot_label
+pot_label := tr03     ? pot_label + sym03  + '\n'  : pot_label
+pot_label := tr04     ? pot_label + sym04  + '\n'  : pot_label
+pot_label := tr05     ? pot_label + sym05  + '\n'  : pot_label
+pot_label := tr06     ? pot_label + sym06  + '\n'  : pot_label
+pot_label := tr07     ? pot_label + sym07  + '\n'  : pot_label
+pot_label := tr08     ? pot_label + sym08  + '\n'  : pot_label
+pot_label := tr09     ? pot_label + sym09  + '\n'  : pot_label
+pot_label := tr10     ? pot_label + sym10 + '\n'  : pot_label
+
+scr_label = 'Confirmed Reversal: \n'
+scr_label := tr01[1]  ? scr_label + sym01  + '\n'  : scr_label
+scr_label := tr02[1]  ? scr_label + sym02  + '\n'  : scr_label
+scr_label := tr03[1]  ? scr_label + sym03  + '\n'  : scr_label
+scr_label := tr04[1]  ? scr_label + sym04  + '\n'  : scr_label
+scr_label := tr05[1]  ? scr_label + sym05  + '\n'  : scr_label
+scr_label := tr06[1]  ? scr_label + sym06  + '\n'  : scr_label
+scr_label := tr07[1]  ? scr_label + sym07  + '\n'  : scr_label
+scr_label := tr08[1]  ? scr_label + sym08  + '\n'  : scr_label
+scr_label := tr09[1]  ? scr_label + sym09  + '\n'  : scr_label
+scr_label := tr10[1]  ? scr_label + sym10 + '\n'  : scr_label
+
+f_colorscr (_valscr ) =>
+     _valscr  ? #00000000 : na
+
+f_printscr (_txtscr ) =>
+     var _lblscr  = label(na),
+     label.delete(_lblscr ),
+     _lblscr  := label.new(
+     time + (time-time[1])*posX_scr ,
+     ohlc4[posY_scr],
+     _txtscr ,
+     xloc.bar_time,
+     yloc.price,
+     f_colorscr (  showscr ),
+     textcolor =  showscr ? col : na,
+     size = size.normal,
+     style=label.style_label_center
+     )
+f_printscr ( scr_label + '\n' + pot_label)
+
+st_security(_symbol, _res, _src) => security(_symbol, _res, _src[barstate.isrealtime ? 1 : 0])
+ST_Trend = st_security(syminfo.tickerid, timeframe.period, Trend)
+ST_Tsl = st_security(syminfo.tickerid, timeframe.period, Tsl)
