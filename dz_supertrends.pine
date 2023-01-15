@@ -6,74 +6,80 @@
 study("Supertrend", shorttitle="DzSt", overlay=true)
 
 // Supertrend
-src          = input(close,              title="Source",                          group="Supertrend")
-periods      = input(14,                 title="ATR period",                      group="Supertrend", type=input.integer)
-multiplier   = input(3.0,                title="ATR multiplier",                  group="Supertrend", type=input.float, step=0.1)
-highlighting = input(true,               title="Highlighter On/Off ?",            group="Supertrend", type=input.bool)
-fastTf       = input("5",                title="Fast Timeframe",                  group="Supertrend", type=input.resolution)
-slowTf       = input("60",               title="Slow Timeframe",                  group="Supertrend", type=input.resolution)
+src          = input(close,              title="Source",                group="Supertrend")
+periods      = input(14,                 title="ATR period",            group="Supertrend", type=input.integer)
+multiplier   = input(3.0,                title="ATR multiplier",        group="Supertrend", type=input.float, step=0.1)
+fastTf       = input("15",                title="Fast Timeframe",       group="Supertrend", type=input.resolution)
+slowTf       = input("60",               title="Slow Timeframe",        group="Supertrend", type=input.resolution)
+allFast      = input(false,              title="Show all fast signals", group="Supertrend")
 
 // Screener
-showscr      = input(true,               title="Show Screener",                   group="Screeners")
-posX_scr     = input(20,                 title="X-axis Position",                 group="Screeners")
-posY_scr     = input(1,                  title="Y-axis Position",                 group="Screeners")
+showscr      = input(true,               title="Show Screener",         group="Screeners")
+posX_scr     = input(20,                 title="X-axis Position",       group="Screeners")
+posY_scr     = input(1,                  title="Y-axis Position",       group="Screeners")
 
 // Screener tickers
-ticker01     = input('BTC1!',            title="Ticker 1",                        group="Screeners")
-ticker02     = input('ETH1!',            title="Ticker 2",                        group="Screeners")
-ticker03     = input('BYBIT:BTCUSDT.P',  title="Ticker 3",                        group="Screeners")
-ticker04     = input('BYBIT:ETHUSDT.P',  title="Ticker 4",                        group="Screeners")
-ticker05     = input('BYBIT:LINKUSDT.P', title="Ticker 5",                        group="Screeners")
-ticker06     = input('BYBIT:SOLUSDT.P',  title="Ticker 6",                        group="Screeners")
-ticker07     = input('BYBIT:ADAUSDT',    title="Ticker 7",                        group="Screeners")
-ticker08     = input('BYBIT:DOTUSDT',    title="Ticker 8",                        group="Screeners")
-ticker09     = input('',                 title="Ticker 9",                        group="Screeners")
-ticker10     = input('',                 title="Ticker 10",                       group="Screeners")
+ticker01     = input('BTC1!',            title="Ticker 1",              group="Screeners")
+ticker02     = input('ETH1!',            title="Ticker 2",              group="Screeners")
+ticker03     = input('BYBIT:BTCUSDT.P',  title="Ticker 3",              group="Screeners")
+ticker04     = input('BYBIT:ETHUSDT.P',  title="Ticker 4",              group="Screeners")
+ticker05     = input('BYBIT:LINKUSDT.P', title="Ticker 5",              group="Screeners")
+ticker06     = input('BYBIT:SOLUSDT.P',  title="Ticker 6",              group="Screeners")
+ticker07     = input('BYBIT:ADAUSDT',    title="Ticker 7",              group="Screeners")
+ticker08     = input('BYBIT:DOTUSDT',    title="Ticker 8",              group="Screeners")
+ticker09     = input('',                 title="Ticker 9",              group="Screeners")
+ticker10     = input('',                 title="Ticker 10",             group="Screeners")
 
 trendInfo(periods, multipler, tf) =>
-    atr     = security(syminfo.tickerid, tf, atr(periods))
+    atr   =  security(syminfo.tickerid, tf, atr(periods))
 
-    up     = src - (multiplier * atr)
-    up1    = nz(up[1], up)
-    up     := close[1] > up1 ? max(up, up1) : up
+    up    =  src - (multiplier * atr)
+    up1   =  nz(up[1], up)
+    up    := close[1] > up1 ? max(up, up1) : up
 
-    dn     = src + (multiplier * atr)
-    dn1    = nz(dn[1], dn)
-    dn     := close[1] < dn1 ? min(dn, dn1) : dn
+    dn    =  src + (multiplier * atr)
+    dn1   =  nz(dn[1], dn)
+    dn    := close[1] < dn1 ? min(dn, dn1) : dn
 
-    trend  = 1
-    trend  := nz(trend[1], trend)
-    trend  := trend == -1 and close > dn1 ? 1 : trend == 1 and close < up1 ? -1 : trend
+    trend =  1
+    trend := nz(trend[1], trend)
+    trend := trend == -1 and close > dn1 ? 1 : trend == 1 and close < up1 ? -1 : trend
 
     signal = trend != trend[1]
 
     [up, dn, trend, signal]
 
-[upA, dnA, trendA, signalA] = trendInfo(periods, multiplier, fastTf)
+[upA, dnA, trendA, signalA] = trendInfo(periods, multiplier, slowTf)
 
 aPlot   = plot(ohlc4, linewidth=0)
 aUpPlot = plot(trendA == 1 ? upA : na, style = plot.style_linebr, color = color.green)
 aDnPlot = plot(trendA == 1 ? na : dnA, style = plot.style_linebr, color = color.red)
 fill(aPlot, aUpPlot, color = trendA == 1 ? color.green : color.white)
 fill(aPlot, aDnPlot, color = trendA == -1 ? color.red : color.white)
-plotshape(signalA and trendA == 1 ? upA : na,  text = "Buy",  location = location.absolute, style = shape.labelup,   size = size.tiny, color = color.green, textcolor = color.white)
-plotshape(signalA and trendA == -1 ? dnA : na, text = "Sell", location = location.absolute, style = shape.labeldown, size = size.tiny, color = color.red,   textcolor = color.white)
 
-[upB, dnB, trendB, signalB] = trendInfo(periods, multiplier, slowTf)
+[upB, dnB, trendB, signalB] = trendInfo(periods, multiplier, fastTf)
 
 bPlot   = plot(ohlc4, linewidth=0)
 bUpPlot = plot(trendB == 1 ? upB : na, style = plot.style_linebr, color = color.teal)
 bDnPlot = plot(trendB == 1 ? na : dnB, style = plot.style_linebr, color = color.purple)
 fill(bPlot, bUpPlot, color = trendB == 1 ? color.teal : color.white)
 fill(bPlot, bDnPlot, color = trendB == -1 ? color.purple : color.white)
-plotshape(signalB and trendB == 1 ? upB : na,  text = "Buy",  location = location.absolute, style = shape.labelup,   size = size.tiny, color = color.teal,   textcolor = color.white)
-plotshape(signalB and trendB == -1 ? dnB : na, text = "Sell", location = location.absolute, style = shape.labeldown, size = size.tiny, color = color.purple, textcolor = color.white)
 
-// Alerts
-// changeCond = trend != trend[1]
-// alertcondition(buySignal, title="SuperTrend Buy", message="SuperTrend Buy!")
-// alertcondition(sellSignal, title="SuperTrend Sell", message="SuperTrend Sell!")
-// alertcondition(changeCond, title="SuperTrend Direction Change", message="SuperTrend has changed direction!")
+plotshape(signalB and trendB == 1 and (allFast or trendA == 1) ? upB : na,
+          text = "Buy",
+          location = location.absolute,
+          style = shape.labelup,
+          size = size.tiny,
+          color = color.teal,
+          textcolor = color.white)
+
+plotshape(signalB and trendB == -1 and (allFast or trendA == -1) ? dnB : na,
+          text = "Sell",
+          location = location.absolute,
+          style = shape.labeldown,
+          size = size.tiny,
+          color = color.purple,
+          textcolor = color.white)
 
 col = color.blue
 
