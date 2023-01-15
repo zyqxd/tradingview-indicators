@@ -6,10 +6,9 @@
 study("Supertrend", shorttitle="DzSt", overlay=true)
 
 // Supertrend
-src          = input(hl2,                title="Source",                          group="Supertrend")
+src          = input(close,              title="Source",                          group="Supertrend")
 periods      = input(10,                 title="ATR period",                      group="Supertrend", type=input.integer)
 multiplier   = input(3.0,                title="ATR multiplier",                  group="Supertrend", type=input.float, step=0.1)
-changeATR    = input(true,               title="Change ATR Calculation Method ?", group="Supertrend", type=input.bool)
 showsignals  = input(true,               title="Show Buy/Sell Signals ?",         group="Supertrend", type=input.bool)
 highlighting = input(true,               title="Highlighter On/Off ?",            group="Supertrend", type=input.bool)
 
@@ -30,43 +29,56 @@ ticker08     = input('BYBIT:DOTUSDT',    title="Ticker 8",                      
 ticker09     = input('',                 title="Ticker 9",                        group="Screeners")
 ticker10     = input('',                 title="Ticker 10",                       group="Screeners")
 
-atr2 = sma(tr, periods)
-atr= changeATR ? atr(periods) : atr2
-up=src-(multiplier*atr)
-up1 = nz(up[1],up)
-up := close[1] > up1 ? max(up,up1) : up
+trendInfo(periods, multipler) =>
+    atr   = atr(periods)
+    up    = src - (multiplier * atr)
+    up1   = nz(up[1],up)
+    up    := close[1] > up1 ? max(up,up1) : up
+    dn    = src + (multiplier*atr)
+    dn1   = nz(dn[1], dn)
+    dn    := close[1] < dn1 ? min(dn, dn1) : dn
+    trend = 1
+    trend := nz(trend[1], trend)
+    trend := trend == -1 and close > dn1 ? 1 : trend == 1 and close < up1 ? -1 : trend
+    buySignal = trend == 1 and trend[1] == -1
+    sellSignal = trend == -1 and trend[1] == 1
 
-dn=src+(multiplier*atr)
-dn1 = nz(dn[1], dn)
-dn := close[1] < dn1 ? min(dn, dn1) : dn
+    [up, dn, trend, buySignal, sellSignal]
 
-trend = 1
-trend := nz(trend[1], trend)
-trend := trend == -1 and close > dn1 ? 1 : trend == 1 and close < up1 ? -1 : trend
+[up, dn, trend, buySignal, sellSignal] = trendInfo(periods, multiplier)
 
-upPlot = plot(trend == 1 ? up : na, title="Up Trend", style=plot.style_linebr, linewidth=2, color=color.green)
-buySignal = trend == 1 and trend[1] == -1
+aPlot = plot(ohlc4, title="", style=plot.style_circles, linewidth=0)
+aUpPlot = plot(trend == 1 ? up : na, title="Up Trend", style=plot.style_linebr, linewidth=2, color=color.green)
+aDnPlot = plot(trend == 1 ? na : dn, title="Down Trend", style=plot.style_linebr, linewidth=2, color=color.red)
+
 plotshape(buySignal ? up : na, title="UpTrend Begins", location=location.absolute, style=shape.circle, size=size.tiny, color=color.green, transp=0)
 plotshape(buySignal and showsignals ? up : na, title="Buy", text="Buy", location=location.absolute, style=shape.labelup, size=size.tiny, color=color.green, textcolor=color.white, transp=0)
-dnPlot = plot(trend == 1 ? na : dn, title="Down Trend", style=plot.style_linebr, linewidth=2, color=color.red)
-sellSignal = trend == -1 and trend[1] == 1
 plotshape(sellSignal ? dn : na, title="DownTrend Begins", location=location.absolute, style=shape.circle, size=size.tiny, color=color.red, transp=0)
 plotshape(sellSignal and showsignals ? dn : na, title="Sell", text="Sell", location=location.absolute, style=shape.labeldown, size=size.tiny, color=color.red, textcolor=color.white, transp=0)
-mPlot = plot(ohlc4, title="", style=plot.style_circles, linewidth=0)
+
 longFillColor = highlighting ? (trend == 1 ? color.green : color.white) : color.white
 shortFillColor = highlighting ? (trend == -1 ? color.red : color.white) : color.white
-fill(mPlot, upPlot, title="UpTrend Highligter", color=longFillColor)
-fill(mPlot, dnPlot, title="DownTrend Highligter", color=shortFillColor)
-alertcondition(buySignal, title="SuperTrend Buy", message="SuperTrend Buy!")
-alertcondition(sellSignal, title="SuperTrend Sell", message="SuperTrend Sell!")
-changeCond = trend != trend[1]
-alertcondition(changeCond, title="SuperTrend Direction Change", message="SuperTrend has changed direction!")
+
+fill(aPlot, aUpPlot, title="UpTrend Highligter", color=longFillColor)
+fill(aPlot, aDnPlot, title="DownTrend Highligter", color=shortFillColor)
+
+// [trendB, bUpPlot, bDnPlot] = trendInfo(periods * 2, multiplier * 2)
+// bPlot = plot(ohlc4, title="", style=plot.style_circles, linewidth=0)
+// fill(bPlot, bUpPlot, title="UpTrend Highligter", color=longFillColor)
+// fill(bPlot, bDnPlot, title="DownTrend Highligter", color=shortFillColor)
+
+// Alerts
+// changeCond = trend != trend[1]
+// alertcondition(buySignal, title="SuperTrend Buy", message="SuperTrend Buy!")
+// alertcondition(sellSignal, title="SuperTrend Sell", message="SuperTrend Sell!")
+// alertcondition(changeCond, title="SuperTrend Direction Change", message="SuperTrend has changed direction!")
 
 col = color.blue
 
 Supertrend(multiplier, periods) =>
-    Up=hl2-(multiplier*atr)
-    Dn=hl2+(multiplier*atr)
+    atr = atr(periods)
+    Up=hl2-(multiplier * atr)
+    Dn=hl2+(multiplier * atr)
 
     TrendUp = 0.0
     TrendUp := close[1]>TrendUp[1] ? max(Up,TrendUp[1]) : Up
@@ -107,27 +119,27 @@ tr09 = t09 != t09[1], up09 = t09 == 1, dn09 = t09 == -1
 tr10 = t10 != t10[1], up10 = t10 == 1, dn10 = t10 == -1
 
 pot_label = 'Potential Reversal: \n'
-pot_label := tr01     ? pot_label + ticker01  + '\n'  : pot_label
-pot_label := tr02     ? pot_label + ticker02  + '\n'  : pot_label
-pot_label := tr03     ? pot_label + ticker03  + '\n'  : pot_label
-pot_label := tr04     ? pot_label + ticker04  + '\n'  : pot_label
-pot_label := tr05     ? pot_label + ticker05  + '\n'  : pot_label
-pot_label := tr06     ? pot_label + ticker06  + '\n'  : pot_label
-pot_label := tr07     ? pot_label + ticker07  + '\n'  : pot_label
-pot_label := tr08     ? pot_label + ticker08  + '\n'  : pot_label
-pot_label := tr09     ? pot_label + ticker09  + '\n'  : pot_label
+pot_label := tr01     ? pot_label + ticker01 + '\n'  : pot_label
+pot_label := tr02     ? pot_label + ticker02 + '\n'  : pot_label
+pot_label := tr03     ? pot_label + ticker03 + '\n'  : pot_label
+pot_label := tr04     ? pot_label + ticker04 + '\n'  : pot_label
+pot_label := tr05     ? pot_label + ticker05 + '\n'  : pot_label
+pot_label := tr06     ? pot_label + ticker06 + '\n'  : pot_label
+pot_label := tr07     ? pot_label + ticker07 + '\n'  : pot_label
+pot_label := tr08     ? pot_label + ticker08 + '\n'  : pot_label
+pot_label := tr09     ? pot_label + ticker09 + '\n'  : pot_label
 pot_label := tr10     ? pot_label + ticker10 + '\n'  : pot_label
 
 scr_label = 'Confirmed Reversal: \n'
-scr_label := tr01[1]  ? scr_label + ticker01  + '\n'  : scr_label
-scr_label := tr02[1]  ? scr_label + ticker02  + '\n'  : scr_label
-scr_label := tr03[1]  ? scr_label + ticker03  + '\n'  : scr_label
-scr_label := tr04[1]  ? scr_label + ticker04  + '\n'  : scr_label
-scr_label := tr05[1]  ? scr_label + ticker05  + '\n'  : scr_label
-scr_label := tr06[1]  ? scr_label + ticker06  + '\n'  : scr_label
-scr_label := tr07[1]  ? scr_label + ticker07  + '\n'  : scr_label
-scr_label := tr08[1]  ? scr_label + ticker08  + '\n'  : scr_label
-scr_label := tr09[1]  ? scr_label + ticker09  + '\n'  : scr_label
+scr_label := tr01[1]  ? scr_label + ticker01 + '\n'  : scr_label
+scr_label := tr02[1]  ? scr_label + ticker02 + '\n'  : scr_label
+scr_label := tr03[1]  ? scr_label + ticker03 + '\n'  : scr_label
+scr_label := tr04[1]  ? scr_label + ticker04 + '\n'  : scr_label
+scr_label := tr05[1]  ? scr_label + ticker05 + '\n'  : scr_label
+scr_label := tr06[1]  ? scr_label + ticker06 + '\n'  : scr_label
+scr_label := tr07[1]  ? scr_label + ticker07 + '\n'  : scr_label
+scr_label := tr08[1]  ? scr_label + ticker08 + '\n'  : scr_label
+scr_label := tr09[1]  ? scr_label + ticker09 + '\n'  : scr_label
 scr_label := tr10[1]  ? scr_label + ticker10 + '\n'  : scr_label
 
 f_colorscr (_valscr ) =>
