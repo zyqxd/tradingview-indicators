@@ -9,10 +9,10 @@ study("Supertrend", shorttitle="DzSt", overlay=true)
 src          = input(close,              title="Source",                group="Supertrend")
 periods      = input(14,                 title="ATR period",            group="Supertrend", type=input.integer)
 multiplier   = input(3.0,                title="ATR multiplier",        group="Supertrend", type=input.float, step=0.1)
-fastTf       = input("15",                title="Fast Timeframe",       group="Supertrend", type=input.resolution)
+fastTf       = input("15",               title="Fast Timeframe",        group="Supertrend", type=input.resolution)
 slowTf       = input("60",               title="Slow Timeframe",        group="Supertrend", type=input.resolution)
 showAllFast  = input(false,              title="Show all fast signals", group="Supertrend")
-showInverse  = input(false,              title="Show inverse atr",  group="Supertrend")
+showInverse  = input(false,              title="Show inverse atr",      group="Supertrend")
 
 // Screener
 showscr      = input(true,               title="Show Screener",         group="Screeners")
@@ -32,19 +32,21 @@ ticker09     = input('',                 title="Ticker 9",              group="S
 ticker10     = input('',                 title="Ticker 10",             group="Screeners")
 
 trendInfo(periods, multipler, tf) =>
-    atr   =  security(syminfo.tickerid, tf, atr(periods))
+    atrV   = security(syminfo.tickerid, tf, atr(periods))
+    srcV   = security(syminfo.tickerid, tf, src)
+    closeV = security(syminfo.tickerid, tf, close)
 
-    up    =  src - (multiplier * atr)
-    up1   =  nz(up[1], up)
-    up    := close[1] > up1 ? max(up, up1) : up
+    up     =  srcV - (multiplier * atrV)
+    up1    =  nz(up[1], up)
+    up     := closeV[1] > up1 ? max(up, up1) : up
 
-    dn    =  src + (multiplier * atr)
-    dn1   =  nz(dn[1], dn)
-    dn    := close[1] < dn1 ? min(dn, dn1) : dn
+    dn     =  srcV + (multiplier * atrV)
+    dn1    =  nz(dn[1], dn)
+    dn     := closeV[1] < dn1 ? min(dn, dn1) : dn
 
-    trend =  1
-    trend := nz(trend[1], trend)
-    trend := trend == -1 and close > dn1 ? 1 : trend == 1 and close < up1 ? -1 : trend
+    trend  =  1
+    trend  := nz(trend[1], trend)
+    trend  := trend == -1 and closeV > dn1 ? 1 : trend == 1 and closeV < up1 ? -1 : trend
 
     signal = trend != trend[1]
 
@@ -56,15 +58,15 @@ pa = plot(ohlc4, transp = 100)
 
 aUpPlot = plot(trendA == 1 or showInverse ? upA : na,  style = plot.style_linebr, color = color.green)
 aDnPlot = plot(trendA == -1 or showInverse ? dnA : na, style = plot.style_linebr, color = color.red)
-fill(pa, aUpPlot, color = color.new(color.green, trendA == 1 ? 75 : 95))
-fill(pa, aDnPlot, color = color.new(color.red, trendA == -1 ? 75 : 95))
+fill(pa, aUpPlot, color = color.new(color.green, trendA == 1 ? 85 : 99))
+fill(pa, aDnPlot, color = color.new(color.red, trendA == -1 ? 85 : 99))
 
 [upB, dnB, trendB, signalB] = trendInfo(periods, multiplier, fastTf)
 
 bUpPlot = plot(trendB == 1 ? upB : na, style = plot.style_linebr, color = color.teal)
 bDnPlot = plot(trendB == 1 ? na : dnB, style = plot.style_linebr, color = color.purple)
-fill(pa, bUpPlot, color = color.new(color.teal, trendA == 1 ? 75 : 95))
-fill(pa, bDnPlot, color = color.new(color.purple, trendA == -1 ? 75 : 95))
+fill(pa, bUpPlot, color = color.new(color.teal, trendA == 1 ? 85 : 99))
+fill(pa, bDnPlot, color = color.new(color.purple, trendA == -1 ? 85 : 99))
 
 plotshape(signalB and trendB == 1 and (showAllFast or trendA == 1) ? upB : na,
           text = "Buy",
