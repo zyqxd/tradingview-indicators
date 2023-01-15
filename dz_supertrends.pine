@@ -11,7 +11,8 @@ periods      = input(14,                 title="ATR period",            group="S
 multiplier   = input(3.0,                title="ATR multiplier",        group="Supertrend", type=input.float, step=0.1)
 fastTf       = input("15",                title="Fast Timeframe",       group="Supertrend", type=input.resolution)
 slowTf       = input("60",               title="Slow Timeframe",        group="Supertrend", type=input.resolution)
-allFast      = input(false,              title="Show all fast signals", group="Supertrend")
+showAllFast  = input(false,              title="Show all fast signals", group="Supertrend")
+showInverse  = input(false,              title="Show inverse atr",  group="Supertrend")
 
 // Screener
 showscr      = input(true,               title="Show Screener",         group="Screeners")
@@ -53,19 +54,19 @@ trendInfo(periods, multipler, tf) =>
 
 pa = plot(ohlc4, transp = 100)
 
-aUpPlot = plot(trendA == 1 ? upA : na, style = plot.style_linebr, color = color.green)
-aDnPlot = plot(trendA == 1 ? na : dnA, style = plot.style_linebr, color = color.red)
-fill(pa, aUpPlot, color = trendA == 1 ? color.green : color.white)
-fill(pa, aDnPlot, color = trendA == -1 ? color.red : color.white)
+aUpPlot = plot(trendA == 1 or showInverse ? upA : na,  style = plot.style_linebr, color = color.green)
+aDnPlot = plot(trendA == -1 or showInverse ? dnA : na, style = plot.style_linebr, color = color.red)
+fill(pa, aUpPlot, color = color.new(color.green, trendA == 1 ? 75 : 95))
+fill(pa, aDnPlot, color = color.new(color.red, trendA == -1 ? 75 : 95))
 
 [upB, dnB, trendB, signalB] = trendInfo(periods, multiplier, fastTf)
 
 bUpPlot = plot(trendB == 1 ? upB : na, style = plot.style_linebr, color = color.teal)
 bDnPlot = plot(trendB == 1 ? na : dnB, style = plot.style_linebr, color = color.purple)
-fill(pa, bUpPlot, color = trendB == 1 ? color.teal : color.white)
-fill(pa, bDnPlot, color = trendB == -1 ? color.purple : color.white)
+fill(pa, bUpPlot, color = color.new(color.teal, trendA == 1 ? 75 : 95))
+fill(pa, bDnPlot, color = color.new(color.purple, trendA == -1 ? 75 : 95))
 
-plotshape(signalB and trendB == 1 and (allFast or trendA == 1) ? upB : na,
+plotshape(signalB and trendB == 1 and (showAllFast or trendA == 1) ? upB : na,
           text = "Buy",
           location = location.absolute,
           style = shape.labelup,
@@ -73,7 +74,7 @@ plotshape(signalB and trendB == 1 and (allFast or trendA == 1) ? upB : na,
           color = color.teal,
           textcolor = color.white)
 
-plotshape(signalB and trendB == -1 and (allFast or trendA == -1) ? dnB : na,
+plotshape(signalB and trendB == -1 and (showAllFast or trendA == -1) ? dnB : na,
           text = "Sell",
           location = location.absolute,
           style = shape.labeldown,
