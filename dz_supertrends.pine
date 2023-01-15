@@ -10,6 +10,8 @@ src          = input(close,              title="Source",                        
 periods      = input(14,                 title="ATR period",                      group="Supertrend", type=input.integer)
 multiplier   = input(3.0,                title="ATR multiplier",                  group="Supertrend", type=input.float, step=0.1)
 highlighting = input(true,               title="Highlighter On/Off ?",            group="Supertrend", type=input.bool)
+fastTf       = input("5",                title="Fast Timeframe",                  group="Supertrend", type=input.resolution)
+slowTf       = input("60",               title="Slow Timeframe",                  group="Supertrend", type=input.resolution)
 
 // Screener
 showscr      = input(true,               title="Show Screener",                   group="Screeners")
@@ -28,14 +30,14 @@ ticker08     = input('BYBIT:DOTUSDT',    title="Ticker 8",                      
 ticker09     = input('',                 title="Ticker 9",                        group="Screeners")
 ticker10     = input('',                 title="Ticker 10",                       group="Screeners")
 
-trendInfo(periods, multipler) =>
-    atr    = atr(periods)
+trendInfo(periods, multipler, tf) =>
+    atr     = security(syminfo.tickerid, tf, atr(periods))
 
     up     = src - (multiplier * atr)
     up1    = nz(up[1], up)
     up     := close[1] > up1 ? max(up, up1) : up
 
-    dn     = src + (multiplier*atr)
+    dn     = src + (multiplier * atr)
     dn1    = nz(dn[1], dn)
     dn     := close[1] < dn1 ? min(dn, dn1) : dn
 
@@ -47,7 +49,7 @@ trendInfo(periods, multipler) =>
 
     [up, dn, trend, signal]
 
-[upA, dnA, trendA, signalA] = trendInfo(periods, multiplier)
+[upA, dnA, trendA, signalA] = trendInfo(periods, multiplier, fastTf)
 
 aPlot   = plot(ohlc4, linewidth=0)
 aUpPlot = plot(trendA == 1 ? upA : na, style = plot.style_linebr, color = color.green)
@@ -57,14 +59,15 @@ fill(aPlot, aDnPlot, color = trendA == -1 ? color.red : color.white)
 plotshape(signalA and trendA == 1 ? upA : na,  text = "Buy",  location = location.absolute, style = shape.labelup,   size = size.tiny, color = color.green, textcolor = color.white)
 plotshape(signalA and trendA == -1 ? dnA : na, text = "Sell", location = location.absolute, style = shape.labeldown, size = size.tiny, color = color.red,   textcolor = color.white)
 
-[upB, dnB, trendB, signalB] = trendInfo(periods * 10, multiplier * 10)
+[upB, dnB, trendB, signalB] = trendInfo(periods, multiplier, slowTf)
+
 bPlot   = plot(ohlc4, linewidth=0)
-bUpPlot = plot(trendB == 1 ? upB : na, style = plot.style_linebr, color = color.green)
-bDnPlot = plot(trendB == 1 ? na : dnB, style = plot.style_linebr, color = color.red)
-fill(bPlot, bUpPlot, color = trendB == 1 ? color.green : color.white)
-fill(bPlot, bDnPlot, color = trendB == -1 ? color.red : color.white)
-plotshape(signalB and trendB == 1 ? upB : na,  text = "Buy",  location = location.absolute, style = shape.labelup,   size = size.tiny, color = color.green, textcolor = color.white)
-plotshape(signalB and trendB == -1 ? dnB : na, text = "Sell", location = location.absolute, style = shape.labeldown, size = size.tiny, color = color.red,   textcolor = color.white)
+bUpPlot = plot(trendB == 1 ? upB : na, style = plot.style_linebr, color = color.teal)
+bDnPlot = plot(trendB == 1 ? na : dnB, style = plot.style_linebr, color = color.purple)
+fill(bPlot, bUpPlot, color = trendB == 1 ? color.teal : color.white)
+fill(bPlot, bDnPlot, color = trendB == -1 ? color.purple : color.white)
+plotshape(signalB and trendB == 1 ? upB : na,  text = "Buy",  location = location.absolute, style = shape.labelup,   size = size.tiny, color = color.teal,   textcolor = color.white)
+plotshape(signalB and trendB == -1 ? dnB : na, text = "Sell", location = location.absolute, style = shape.labeldown, size = size.tiny, color = color.purple, textcolor = color.white)
 
 // Alerts
 // changeCond = trend != trend[1]
