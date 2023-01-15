@@ -51,19 +51,19 @@ trendInfo(periods, multipler, tf) =>
 
 [upA, dnA, trendA, signalA] = trendInfo(periods, multiplier, slowTf)
 
-aPlot   = plot(ohlc4, linewidth=0)
+pa = plot(ohlc4, transp = 100)
+
 aUpPlot = plot(trendA == 1 ? upA : na, style = plot.style_linebr, color = color.green)
 aDnPlot = plot(trendA == 1 ? na : dnA, style = plot.style_linebr, color = color.red)
-fill(aPlot, aUpPlot, color = trendA == 1 ? color.green : color.white)
-fill(aPlot, aDnPlot, color = trendA == -1 ? color.red : color.white)
+fill(pa, aUpPlot, color = trendA == 1 ? color.green : color.white)
+fill(pa, aDnPlot, color = trendA == -1 ? color.red : color.white)
 
 [upB, dnB, trendB, signalB] = trendInfo(periods, multiplier, fastTf)
 
-bPlot   = plot(ohlc4, linewidth=0)
 bUpPlot = plot(trendB == 1 ? upB : na, style = plot.style_linebr, color = color.teal)
 bDnPlot = plot(trendB == 1 ? na : dnB, style = plot.style_linebr, color = color.purple)
-fill(bPlot, bUpPlot, color = trendB == 1 ? color.teal : color.white)
-fill(bPlot, bDnPlot, color = trendB == -1 ? color.purple : color.white)
+fill(pa, bUpPlot, color = trendB == 1 ? color.teal : color.white)
+fill(pa, bDnPlot, color = trendB == -1 ? color.purple : color.white)
 
 plotshape(signalB and trendB == 1 and (allFast or trendA == 1) ? upB : na,
           text = "Buy",
