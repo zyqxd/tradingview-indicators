@@ -58,15 +58,15 @@ pa = plot(ohlc4, transp = 100)
 
 aUpPlot = plot(trendA == 1 or showInverse ? upA : na,  style = plot.style_linebr, color = color.green)
 aDnPlot = plot(trendA == -1 or showInverse ? dnA : na, style = plot.style_linebr, color = color.red)
-fill(pa, aUpPlot, color = color.new(color.green, trendA == 1 ? 85 : 99))
-fill(pa, aDnPlot, color = color.new(color.red, trendA == -1 ? 85 : 99))
+fill(pa, aUpPlot, color = color.new(color.green, trendA == 1 ? 90 : 99))
+fill(pa, aDnPlot, color = color.new(color.red, trendA == -1 ? 90 : 99))
 
 [upB, dnB, trendB, signalB] = trendInfo(periods, multiplier, fastTf)
 
-bUpPlot = plot(trendB == 1 ? upB : na, style = plot.style_linebr, color = color.teal)
-bDnPlot = plot(trendB == 1 ? na : dnB, style = plot.style_linebr, color = color.purple)
-fill(pa, bUpPlot, color = color.new(color.teal, trendA == 1 ? 85 : 99))
-fill(pa, bDnPlot, color = color.new(color.purple, trendA == -1 ? 85 : 99))
+bUpPlot = plot(trendB == 1 or showInverse ? upB : na, style = plot.style_linebr, color = color.teal)
+bDnPlot = plot(trendB == -1 or showInverse ? dnB : na, style = plot.style_linebr, color = color.purple)
+fill(pa, bUpPlot, color = color.new(color.teal, trendB == 1 ? 90 : 99))
+fill(pa, bDnPlot, color = color.new(color.purple, trendB == -1 ? 90 : 99))
 
 plotshape(signalB and trendB == 1 and (showAllFast or trendA == 1) ? upB : na,
           text = "Buy",
