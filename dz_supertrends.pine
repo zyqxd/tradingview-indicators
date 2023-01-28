@@ -1,9 +1,9 @@
 // This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
-// © itsdeezy
+// © zyqxd
 // derived the screener logic from @ KivancOzbilgic
 //@version=4
 
-study("Supertrend", shorttitle="DzSt", overlay=true)
+study("zyqxd supertrend", shorttitle="zyqSt", overlay=true)
 
 // Supertrend
 src          = input(close,              title="Source",                group="Supertrend")
@@ -18,6 +18,10 @@ showInverse  = input(false,              title="Show inverse atr",      group="S
 showscr      = input(true,               title="Show Screener",         group="Screeners")
 posX_scr     = input(20,                 title="X-axis Position",       group="Screeners")
 posY_scr     = input(1,                  title="Y-axis Position",       group="Screeners")
+
+// Alerts
+aRepaint     = input(false,              title="Allow Repaint",         group="Alerts")
+aMatching    = input(false,              title="Match Timeframe",       group="Alerts")
 
 // Screener tickers
 ticker01     = input('BTC1!',            title="Ticker 1",              group="Screeners")
@@ -52,22 +56,22 @@ trendInfo(periods, multipler, tf) =>
 
     [up, dn, trend, signal]
 
+// Plot for slow supertrend
 [upA, dnA, trendA, signalA] = trendInfo(periods, multiplier, slowTf)
-
 pa = plot(ohlc4, transp = 100)
-
 aUpPlot = plot(trendA == 1 or showInverse ? upA : na,  style = plot.style_linebr, color = color.green)
 aDnPlot = plot(trendA == -1 or showInverse ? dnA : na, style = plot.style_linebr, color = color.red)
 fill(pa, aUpPlot, color = color.new(color.green, trendA == 1 ? 90 : 99))
 fill(pa, aDnPlot, color = color.new(color.red, trendA == -1 ? 90 : 99))
 
+// Plot for fast supertrend
 [upB, dnB, trendB, signalB] = trendInfo(periods, multiplier, fastTf)
-
 bUpPlot = plot(trendB == 1 or showInverse ? upB : na, style = plot.style_linebr, color = color.teal)
 bDnPlot = plot(trendB == -1 or showInverse ? dnB : na, style = plot.style_linebr, color = color.purple)
 fill(pa, bUpPlot, color = color.new(color.teal, trendB == 1 ? 90 : 99))
 fill(pa, bDnPlot, color = color.new(color.purple, trendB == -1 ? 90 : 99))
 
+// Plot signals for fast supertrend
 plotshape(signalB and trendB == 1 and (showAllFast or trendA == 1) ? upB : na,
           text = "Buy",
           location = location.absolute,
@@ -84,8 +88,15 @@ plotshape(signalB and trendB == -1 and (showAllFast or trendA == -1) ? dnB : na,
           color = color.purple,
           textcolor = color.white)
 
-col = color.blue
+// Alerts for fast supertrend
+if aRepaint or barstate.isconfirmed
+    if signalB and trendB == 1 and (aMatching or trendA == 1)
+        alert("[" + fastTf +  " / " + slowTf + "] " + syminfo.tickerid + " ST Buy")
+    else if signalB and trendB == -1 and (aMatching or trendA == -1)
+        alert("[" + fastTf +  " / " + slowTf + "] " + syminfo.tickerid + " ST Sell")
 
+// Screener shit I don't understand yet
+col = color.blue
 Supertrend(multiplier, periods) =>
     atr = atr(periods)
     Up=hl2-(multiplier * atr)
