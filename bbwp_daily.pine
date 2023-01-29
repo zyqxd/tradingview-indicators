@@ -1,0 +1,25 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © zyqxd
+
+//@version=4
+study("BBWP Daily", overlay=false)
+
+bbwpTf = "D"
+// BBWP Calculation
+f_bbwp ( bbwLen, bbwpLen ) =>
+    float basis = security(syminfo.tickerid, bbwpTf, sma(close, bbwLen))
+    float dev = security(syminfo.tickerid, bbwpTf, stdev(close, bbwLen))
+    _bbw = (( basis + dev ) - ( basis - dev )) / basis
+    _bbwSum = 0
+    for i = 1 to bbwpLen
+        _bbwSum := _bbwSum + ( _bbw [i] > _bbw ? 0 : 1 )
+    return = ( _bbwSum / bbwpLen ) * 100
+
+// bbwp length = 13, bbwp lookback period = 252
+bbwp = f_bbwp(13, 252)
+bbwp_ma = security(syminfo.tickerid, bbwpTf, sma(bbwp, 5))
+// plot(bbwp,         "BBWP", color.red,  2,   plot.style_line)
+// plot(, "MA 1", color.white, 1,  plot.style_line)
+// plot(security(syminfo.tickerid, bbwpTf, close), "Daily Close")
+bgcolor(bbwp > bbwp_ma and bbwp > 30 ? color.new(color.red, 95) : color.new(color.green, 95))
+// isTrending = bbwp > bbwp_ma and bbwp > 30

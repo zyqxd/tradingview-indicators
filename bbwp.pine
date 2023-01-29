@@ -1,6 +1,6 @@
+//@version=5
 //
 // This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
-// @version = 4
 // @author  = The_Caretaker
 // © The_Caretaker
 //
@@ -9,42 +9,14 @@
 // Feel free to reuse or develop this script further, please drop me a note below if you find it useful.
 //
 
-study  ( "Bollinger Band Width Percentile", "BBWP", overlay = false, format = format.percent, precision = 2)
-
-///////////////////////////////////////////////////////////////////////////////
-// inputs
-
-i_priceSrc      = input ( close,            "Price Source", input.source,                                                               group = "BBWP Properties" )
-i_basisType     = input ( "SMA",            "Basis Type",   input.string,  options = [ "SMA", "EMA", "VWMA" ],                          group = "BBWP Properties" )
-i_bbwpLen       = input ( 20,               "Length",       input.integer, minval  = 1,                                                 group = "BBWP Properties" )
-i_bbwpLkbk      = input ( 255,              "Lookback",     input.integer, minval  = 1,                                                 group = "BBWP Properties" )
-
-i_c_bbwpTyped   = input ( "Spectrum",       "Color Type",   input.string,  options = [ "Spectrum", "Solid" ],           inline = "1",   group = "BBWP Plot Settings" )
-i_c_spctrmType  = input ( "Blue Green Red", "Spectrum",     input.string,  options = [ "Blue Red", "Blue Green Red"],   inline = "1",   group = "BBWP Plot Settings" )
-i_c_bbwpsolid   = input ( #FFFF00,          "Solid",        input.color,                                                inline = "1",   group = "BBWP Plot Settings" )
-i_bbwpWidth     = input ( 2,                "Line Width",   input.integer, minval  = 1, maxval = 4,                     inline = "2",   group = "BBWP Plot Settings" )
-i_bbwpTransp    = input ( 0,                "Transparancy", input.integer, minval  = 0,                                 inline = "3",   group = "BBWP Plot Settings" )
-
-i_ma1On         = input ( true,             "",             input.bool,                                                 inline = "1",   group = "Moving Average Settings" )
-i_ma1Type       = input ( "SMA",            "MA 1 Type",    input.string,  options = [ "SMA", "EMA", "VWMA" ],          inline = "1",   group = "Moving Average Settings" )
-i_c_ma1         = input ( #FFFFFF,          "",             input.color,                                                inline = "1",   group = "Moving Average Settings" )
-i_ma1Len        = input ( 8,                "Length",       input.integer, minval  = 1,                                 inline = "1",   group = "Moving Average Settings" )
-i_ma2On         = input ( false,            "",             input.bool,                                                 inline = "2",   group = "Moving Average Settings" )
-i_ma2Type       = input ( "SMA",            "MA 2 Type",    input.string,  options = [ "SMA", "EMA", "VWMA" ],          inline = "2",   group = "Moving Average Settings" )
-i_c_ma2         = input ( #00FFFF,          "",             input.color,                                                inline = "2",   group = "Moving Average Settings" )
-i_ma2Len        = input ( 14,               "Length",       input.integer, minval  = 1,                                 inline = "2",   group = "Moving Average Settings" )
-
-i_alrtsOn       = input ( true,             "Alerts On",    input.bool,                                                                 group = "Visual Alerts" )
-i_upperLevel    = input ( 100,              "Extreme High", input.integer, minval  = 1,                                 inline = "1",   group = "Visual Alerts" )
-i_lowerLevel    = input ( 0,                "Extreme Low",  input.integer, minval  = 1,                                 inline = "1",   group = "Visual Alerts" )
-i_alrtTransp    = input ( 0,                "Transparancy", input.integer, minval  = 0,                                 inline = "2",   group = "Visual Alerts" )
+indicator('Bollinger Band Width Percentile', 'BBWP', overlay=false, format=format.percent, precision=2, max_bars_back = 1000)
 
 ///////////////////////////////////////////////////////////////////////////////
 // variable declarations
 
-var c_prcntSpctrm1 = array.new_color ( na )
+var c_prcntSpctrm1 = array.new_color(na)
 if barstate.isfirst
-    array.push ( c_prcntSpctrm1, #0000FF ),
+    array.push ( c_prcntSpctrm1, #0000FF )
     array.push ( c_prcntSpctrm1, #000AFF ), array.push ( c_prcntSpctrm1, #0014FF ), array.push ( c_prcntSpctrm1, #001FFF ), array.push ( c_prcntSpctrm1, #0029FF ), array.push ( c_prcntSpctrm1, #0033FF ),
     array.push ( c_prcntSpctrm1, #003DFF ), array.push ( c_prcntSpctrm1, #0047FF ), array.push ( c_prcntSpctrm1, #0052FF ), array.push ( c_prcntSpctrm1, #005CFF ), array.push ( c_prcntSpctrm1, #0066FF ),
     array.push ( c_prcntSpctrm1, #0070FF ), array.push ( c_prcntSpctrm1, #007AFF ), array.push ( c_prcntSpctrm1, #0085FF ), array.push ( c_prcntSpctrm1, #008FFF ), array.push ( c_prcntSpctrm1, #0099FF ),
@@ -66,9 +38,9 @@ if barstate.isfirst
     array.push ( c_prcntSpctrm1, #FF5C00 ), array.push ( c_prcntSpctrm1, #FF5200 ), array.push ( c_prcntSpctrm1, #FF4700 ), array.push ( c_prcntSpctrm1, #FF3D00 ), array.push ( c_prcntSpctrm1, #FF3300 ),
     array.push ( c_prcntSpctrm1, #FF2900 ), array.push ( c_prcntSpctrm1, #FF1F00 ), array.push ( c_prcntSpctrm1, #FF1400 ), array.push ( c_prcntSpctrm1, #FF0000 ), array.push ( c_prcntSpctrm1, #FF0000 )
 
-var c_prcntSpctrm2 = array.new_color ( na )
+var c_prcntSpctrm2 = array.new_color(na)
 if barstate.isfirst
-    array.push ( c_prcntSpctrm2, #0000FF ),
+    array.push ( c_prcntSpctrm2, #0000FF )
     array.push ( c_prcntSpctrm2, #0200FC ), array.push ( c_prcntSpctrm2, #0500F9 ), array.push ( c_prcntSpctrm2, #0700F7 ), array.push ( c_prcntSpctrm2, #0A00F4 ), array.push ( c_prcntSpctrm2, #0C00F2 ),
     array.push ( c_prcntSpctrm2, #0F00EF ), array.push ( c_prcntSpctrm2, #1100ED ), array.push ( c_prcntSpctrm2, #1400EA ), array.push ( c_prcntSpctrm2, #1600E8 ), array.push ( c_prcntSpctrm2, #1900E5 ),
     array.push ( c_prcntSpctrm2, #1C00E2 ), array.push ( c_prcntSpctrm2, #1E00E0 ), array.push ( c_prcntSpctrm2, #2100DD ), array.push ( c_prcntSpctrm2, #2300DB ), array.push ( c_prcntSpctrm2, #2600D8 ),
@@ -90,21 +62,57 @@ if barstate.isfirst
     array.push ( c_prcntSpctrm2, #E80016 ), array.push ( c_prcntSpctrm2, #EA0014 ), array.push ( c_prcntSpctrm2, #ED0011 ), array.push ( c_prcntSpctrm2, #EF000F ), array.push ( c_prcntSpctrm2, #F2000C ),
     array.push ( c_prcntSpctrm2, #F4000A ), array.push ( c_prcntSpctrm2, #F70007 ), array.push ( c_prcntSpctrm2, #F90005 ), array.push ( c_prcntSpctrm2, #FC0002 ), array.push ( c_prcntSpctrm2, #FF0000 )
 
+var string STM = 'Spectrum'
+var string SLD = 'Solid'
+var string BGR = 'Blue Green Red'
+var string BR  = 'Blue Red'
+
+///////////////////////////////////////////////////////////////////////////////
+// inputs
+
+i_priceSrc      = input.source  ( close,    'Price Source',                                                                         group='BBWP Properties')
+i_basisType     = input.string  ( 'SMA',    'Basis Type',                       options=['SMA', 'EMA', 'VWMA'],                     group='BBWP Properties')
+i_bbwpLen       = input.int     ( 13,       'Length',                           minval=1,                                           group='BBWP Properties')
+i_bbwpLkbk      = input.int     ( 252,      'Lookback',                         minval=1,                                           group='BBWP Properties')
+
+i_c_bbwpTyped   = input.string  ( STM,      'Color Type',                       options=[STM, SLD],                     inline='1', group='BBWP Plot Settings')
+i_c_spctrmType  = input.string  ( BGR,      'Spectrum',                         options=[BR, BGR],                      inline='1', group='BBWP Plot Settings')
+i_c_bbwpsolid   = input.color   ( #FFFF00,  'Solid',                                                                    inline='1', group='BBWP Plot Settings')
+i_bbwpWidth     = input.int     ( 2,        'Line Width',                       minval=1, maxval=4,                     inline='2', group='BBWP Plot Settings')
+
+i_ma1On         = input.bool    ( true, '',                                                                             inline='1', group='Moving Average Settings')
+i_ma1Type       = input.string  ( 'SMA',    'MA 1 Type',                        options=['SMA', 'EMA', 'VWMA'],         inline='1', group='Moving Average Settings')
+i_c_ma1         = input.color   ( #FFFFFF,  '',                                                                         inline='1', group='Moving Average Settings')
+i_ma1Len        = input.int     ( 5,        'Length',                           minval=1,                               inline='1', group='Moving Average Settings')
+i_ma2On         = input.bool    ( false,    '',                                                                         inline='2', group='Moving Average Settings')
+i_ma2Type       = input.string  ( 'SMA',    'MA 2 Type',                        options=['SMA', 'EMA', 'VWMA'],         inline='2', group='Moving Average Settings')
+i_c_ma2         = input.color   ( #00FFFF,  '',                                                                         inline='2', group='Moving Average Settings')
+i_ma2Len        = input.int     ( 8,        'Length',                           minval=1,                               inline='2', group='Moving Average Settings')
+
+i_alrtsOn       = input.bool    ( true,     'Alerts On',                                                                            group='Visual Alerts')
+i_upperLevel    = input.int     ( 98,       'Extreme High',                     minval=1, inline='1',                               group='Visual Alerts')
+i_lowerLevel    = input.int     ( 2,        'Extreme Low',                      minval=1, inline='1',                               group='Visual Alerts')
+
 ///////////////////////////////////////////////////////////////////////////////
 // function declarations
 
-f_maType ( price, len, type ) => type == "SMA" ? sma ( price, len ) : type == "EMA" ? ema ( price, len ) : vwma ( price, len )
+f_maType ( _price, _len, _type ) =>
+    _type == 'SMA' ? ta.sma ( _price, _len ) : _type == 'EMA' ? ta.ema ( _price, _len ) : ta.vwma ( _price, _len )
 
-f_bbwp ( price, bbwLen, bbwpLen, type ) =>
-    float basis = f_maType ( price, bbwLen, type )
-    float dev = stdev ( price, bbwLen )
-    _bbw = (( basis + dev ) - ( basis - dev )) / basis
-    _bbwSum = 0
-    for i = 1 to bbwpLen
-        _bbwSum := _bbwSum + ( _bbw [i] > _bbw ? 0 : 1 )
-    return = ( _bbwSum / i_bbwpLkbk ) * 100
+f_bbwp ( _price, _bbwLen, _bbwpLen, _type ) =>
+    float _basis = f_maType ( _price, _bbwLen, _type )
+    float _dev = ta.stdev ( _price, _bbwLen )
+    _bbw = ( _basis + _dev - ( _basis - _dev )) / _basis
+    _bbwSum = 0.0
+    _len = bar_index < _bbwpLen ? bar_index : _bbwpLen
+    for _i = 1 to _len by 1
+        _bbwSum += ( _bbw[_i] > _bbw ? 0 : 1 )
+        _bbwSum
+    _return = bar_index >= _bbwLen ? ( _bbwSum / _len) * 100 : na
+    _return
 
-f_clrSlct ( percent, select, type, solid, array1, array2 ) => select == "Solid" ? solid : array.get ( type == "Blue Green Red" ? array1 : array2, round ( percent ) )
+f_clrSlct ( _percent, _select, _type, _solid, _array1, _array2 ) =>
+    _select == 'Solid' ? _solid : array.get ( _type == 'Blue Green Red' ? _array1 : _array2, math.round ( _percent ) )
 
 ///////////////////////////////////////////////////////////////////////////////
 // calculations
@@ -119,15 +127,15 @@ loAlrtBar   = i_alrtsOn and bbwp <= i_lowerLevel ? bbwp : na
 ///////////////////////////////////////////////////////////////////////////////
 // plots
 
-p_scaleHi   = hline ( 100,      "Scale High",   #ff0000,                hline.style_solid )
-p_midLine   = hline ( 50,       "Mid-Line",     color.silver,           hline.style_dashed )
-p_scaleLo   = hline ( 0,        "Scale Low",    #0000ff,                hline.style_solid )
+p_scaleHi   = hline ( 100,  'Scale High', #ff0000, hline.style_solid )
+p_midLine   = hline ( 50,   'Mid-Line', color.silver, hline.style_dashed )
+p_scaleLo   = hline ( 0,    'Scale Low', #0000ff, hline.style_solid )
 
-p_bbwp      = plot ( bbwp,      "BBWP",         c_bbwp,  i_bbwpWidth,   plot.style_line,    transp = i_bbwpTransp, editable = false )
-p_hiAlrt    = plot ( hiAlrtBar, "Extreme Hi",   c_bbwp,  1,             plot.style_columns, transp = i_alrtTransp, histbase = 0,   editable = false )
-p_loAlrt    = plot ( loAlrtBar, "Extreme Lo",   c_bbwp,  1,             plot.style_columns, transp = i_alrtTransp, histbase = 100, editable = false )
-p_ma1       = plot ( bbwpMA1,   "MA 1",         i_c_ma1, 1,             plot.style_line,    0 )
-p_ma2       = plot ( bbwpMA2,   "MA 2",         i_c_ma2, 1,             plot.style_line,    0 )
+p_bbwp      = plot ( bbwp,      'BBWP',         c_bbwp, i_bbwpWidth, plot.style_line, editable=false )
+p_hiAlrt    = plot ( hiAlrtBar, 'Extreme Hi',   c_bbwp, 1, plot.style_columns, histbase=0, editable=false )
+p_loAlrt    = plot ( loAlrtBar, 'Extreme Lo',   c_bbwp, 1, plot.style_columns, histbase=100, editable=false )
+p_ma1       = plot ( bbwpMA1,   'MA 1',         i_c_ma1, 1, plot.style_line, 0 )
+p_ma2       = plot ( bbwpMA2,   'MA 2',         i_c_ma2, 1, plot.style_line, 0 )
 
 /////////////////////////////
 // end

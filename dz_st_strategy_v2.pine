@@ -6,25 +6,47 @@
 strategy("zyqxd supertrend backtest v2", overlay=true, margin_long=100, margin_short=100, calc_on_every_tick=true, max_bars_back=1000, initial_capital=10000)
 
 // Strategy
-actOnAll     = input(false,              title="Act on all signals",    group="Strategy")
 strat_tp1    = input(2,                  title='TP lv1 %',              group="Strategy", step=0.1) / 100
 strat_tp2    = input(8,                  title='TP lv2 %',              group="Strategy", step=0.1) / 100
 strat_tp3    = input(20,                 title='TP lv3 %',              group="Strategy", step=0.1) / 100
 strat_sl     = input(2,                  title='Stop lv %',             group="Strategy", step=0.1) / 100
+trendingMin  = input(30,                 title='Trending Threshold',    group="Strategy")
 
 // Supertrend
 src          = input(close,              title="Source",                group="Supertrend")
 periods      = input(14,                 title="ATR period",            group="Supertrend", type=input.integer)
 multiplier   = input(3.0,                title="ATR multiplier",        group="Supertrend", type=input.float, step=0.1)
 fastTf       = input("15",               title="Fast Timeframe",        group="Supertrend", type=input.resolution)
-slowTf       = input("60",               title="Slow Timeframe",        group="Supertrend", type=input.resolution)
+slowTf       = input("360",              title="Slow Timeframe",        group="Supertrend", type=input.resolution)
+bbwpTf       = input("D",                title="BBWP Timeframe",        group="Supertrend", type=input.resolution)
 showInverse  = input(false,              title="Show inverse atr",      group="Supertrend")
 showSignals  = input(true,               title="Show signals",          group="Supertrend")
 
-trendInfo(periods, multipler, tf) =>
-    atrV   = security(syminfo.tickerid, tf, atr(periods))
-    srcV   = security(syminfo.tickerid, tf, src)
-    closeV = security(syminfo.tickerid, tf, close)
+// trendInfo(periods, multipler, tf) =>
+//     atrV   = security(syminfo.tickerid, tf, atr(periods))
+//     srcV   = security(syminfo.tickerid, tf, src)
+//     closeV = security(syminfo.tickerid, tf, close)
+
+//     up     =  srcV - (multiplier * atrV)
+//     up1    =  nz(up[1], up)
+//     up     := closeV[1] > up1 ? max(up, up1) : up
+
+//     dn     =  srcV + (multiplier * atrV)
+//     dn1    =  nz(dn[1], dn)
+//     dn     := closeV[1] < dn1 ? min(dn, dn1) : dn
+
+//     trend  =  1
+//     trend  := nz(trend[1], trend)
+//     trend  := trend == -1 and closeV > dn1 ? 1 : trend == 1 and closeV < up1 ? -1 : trend
+
+//     signal = trend != trend[1]
+
+//     [up, dn, trend, signal]
+
+trendInfo(periods, multipler) =>
+    atrV   = atr(periods)
+    srcV   = src
+    closeV = close
 
     up     =  srcV - (multiplier * atrV)
     up1    =  nz(up[1], up)
@@ -44,22 +66,37 @@ trendInfo(periods, multipler, tf) =>
 
 pa = plot(ohlc4, color = color.new(color.white, 100))
 // Plot for slow supertrend
-[upA, dnA, trendA, signalA] = trendInfo(periods, multiplier, slowTf)
+[upA, dnA, trendA, signalA] = security(syminfo.tickerid, slowTf, trendInfo(periods, multiplier))
 aUpPlot = plot(trendA == 1 or showInverse ? upA : na, color = color.green)
 aDnPlot = plot(trendA == -1 or showInverse ? dnA : na, color = color.red)
 fill(pa, aUpPlot, color = color.new(color.green, trendA == 1 ? 90 : 99))
 fill(pa, aDnPlot, color = color.new(color.red, trendA == -1 ? 90 : 99))
 
 // Plot for fast supertrend
-[upB, dnB, trendB, signalB] = trendInfo(periods, multiplier, fastTf)
+[upB, dnB, trendB, signalB] = security(syminfo.tickerid, fastTf, trendInfo(periods, multiplier))
 bUpPlot = plot(trendB == 1 or showInverse ? upB : na, style = plot.style_linebr, color = color.teal)
 bDnPlot = plot(trendB == -1 or showInverse ? dnB : na, style = plot.style_linebr, color = color.purple)
 
-// longCondition = signalB and trendB == 1 and (actOnAll or trendA == 1)
-// shortCondition = signalB and trendB == -1 and (actOnAll or trendA == -1)
+// BBWP Calculation
+f_bbwp ( bbwLen, bbwpLen ) =>
+    float basis = security(syminfo.tickerid, bbwpTf, sma(close, bbwLen))
+    float dev = security(syminfo.tickerid, bbwpTf, stdev(close, bbwLen))
+    _bbw = (( basis + dev ) - ( basis - dev )) / basis
+    _bbwSum = 0
+    for i = 1 to bbwpLen
+        _bbwSum := _bbwSum + ( _bbw [i] > _bbw ? 0 : 1 )
+    return = ( _bbwSum / bbwpLen ) * 100
 
-longCondition = signalB and trendA == 1 and low <= upB
-shortCondition = signalB and trendA == -1 and high >= dnB
+// bbwp length = 13, bbwp lookback period = 252
+bbwp = f_bbwp(13, 252)
+bbwp_ma = security(syminfo.tickerid, bbwpTf, sma(bbwp, 5))
+bgcolor(bbwp > bbwp_ma and bbwp > trendingMin ? color.new(color.red, 95) : color.new(color.green, 95))
+
+isTrending = bbwp > bbwp_ma and bbwp > trendingMin
+longCondition = trendA == 1 and low <= upB
+shortCondition = trendA == -1 and high >= dnB
+trendingLongCondition = signalB and trendB == 1 and trendA == 1
+trendingShortCondition = signalB and trendB == -1 and trendA == -1
 
 // Plot signals for fast supertrend
 plotshape(showSignals and longCondition ? upB : na,
@@ -78,22 +115,35 @@ plotshape(showSignals and shortCondition ? dnB : na,
           color = color.purple,
           textcolor = color.white)
 
-if barstate.isconfirmed
+if isTrending != isTrending[1]
+    strategy.close_all(comment='🟡🟡🟡')
+
+if isTrending
+    if trendingLongCondition
+        strategy.entry("long", strategy.long, limit=upB, comment="🟢")
+
+    if trendingShortCondition
+        strategy.entry("short", strategy.short, limit=dnB, comment="🔴")
+
+    strategy.exit("⭐️", "long", qty_percent=33, limit=strategy.position_avg_price * (1 + strat_tp1))
+    strategy.exit("⭐️⭐️", "long", qty_percent=33, limit=strategy.position_avg_price * (1 + strat_tp2))
+    strategy.exit("⭐️⭐️⭐️", "long", qty_percent=33, limit=strategy.position_avg_price * (1 + strat_tp3))
+
+    strategy.exit("⭐️", "short", qty_percent=33, limit=strategy.position_avg_price * (1 - strat_tp1))
+    strategy.exit("⭐️⭐️", "short", qty_percent=33, limit=strategy.position_avg_price * (1 - strat_tp2))
+    strategy.exit("⭐️⭐️⭐️", "short", qty_percent=33, limit=strategy.position_avg_price * (1 - strat_tp3))
+
+    strategy.exit("🎯", "long", stop=strategy.position_avg_price * (1 - strat_sl))
+    strategy.exit("🎯", "short", stop=strategy.position_avg_price * (1 + strat_sl))
+else
     if longCondition
         strategy.entry("long", strategy.long, limit=upB, when=strategy.position_size <= 0, comment="🟢")
 
     if shortCondition
         strategy.entry("short", strategy.short, limit=dnB, when=strategy.position_size <= 0, comment="🔴")
 
-strategy.exit("🎯", "long", limit=dnB, stop=strategy.position_avg_price * (1 - strat_sl))
-// strategy.exit("⭐️", "long", qty_percent=33, limit=strategy.position_avg_price * (1 + strat_tp1))
-// strategy.exit("⭐️⭐️", "long", qty_percent=33, limit=strategy.position_avg_price * (1 + strat_tp2))
-// strategy.exit("⭐️⭐️⭐️", "long", qty_percent=33, limit=strategy.position_avg_price * (1 + strat_tp3))
-
-strategy.exit("🎯", "short", limit=upB, stop=strategy.position_avg_price * (1 + strat_sl))
-// strategy.exit("⭐️", "short", qty_percent=33, limit=strategy.position_avg_price * (1 - strat_tp1))
-// strategy.exit("⭐️⭐️", "short", qty_percent=33, limit=strategy.position_avg_price * (1 - strat_tp2))
-// strategy.exit("⭐️⭐️⭐️", "short", qty_percent=33, limit=strategy.position_avg_price * (1 - strat_tp3))
+    strategy.exit("🎯", "long", limit=dnB, stop=strategy.position_avg_price * (1 - strat_sl))
+    strategy.exit("🎯", "short", limit=upB, stop=strategy.position_avg_price * (1 + strat_sl))
 
 plot(strategy.position_avg_price * (1 - strat_sl), color=color.red)
 plot(strategy.position_avg_price * (1 + strat_sl), color=color.green)
