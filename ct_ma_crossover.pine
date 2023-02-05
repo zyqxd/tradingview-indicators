@@ -1,0 +1,335 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// @author = The_Caretaker
+// © The_Caretaker
+// @version=5
+//
+// On Chart indicator which shows a set of 9 user defined moving averages ( choice of type color and length )
+//
+// Also shows the closing price required to cross any 5 pair of moving averages chosen from the user defined set as optional cross level lines and within an optional infobox or infopanel
+//
+// Feel free to reuse the script functions, or to develop the script further, please drop me a note below if you find it useful.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+indicator ( 'CT Moving Average Crossover Indicator', 'CT MAC', overlay = true )
+
+///////////////////////////////////////////////////////////////////////////////
+// Variable Declarations
+
+string t1 = 'MA 1'
+string t2 = 'MA 2'
+string t3 = 'MA 3'
+string t4 = 'MA 4'
+string t5 = 'MA 5'
+string t6 = 'MA 6'
+string t7 = 'MA 7'
+string t8 = 'MA 8'
+string t9 = 'MA 9'
+
+///////////////////////////////////////////////////////////////////////////////
+// Inputs
+
+i_price =   input.source ( close, 'Price Source',                                                                                                  group = 'Main Properties' )
+i_mas_on =  input.bool ( true, 'Moving Average Lines',                                                                                             group = 'Main Properties' )
+i_x_ln_on = input.bool ( false,'Moving Average Crossover Lines',                                                                                   group = 'Main Properties' )
+
+i_box_on =   input.bool ( false, 'Moving Average Crossover Info Box',                                                                              group = 'Info Box Properties' )
+i_box_oSet = input.int ( 6, 'Crossover Infobox Offset', minval=0, maxval=100,                                                                      group = 'Info Box Properties' )
+i_d_pl =     input.int ( 2, 'Decimal Places Shown',     minval=0, maxval=10,                                                                       group = 'Info Box Properties' )
+
+////////////////////////////////////////////////////////////////////////////////
+// Display
+
+i_panel_on = input.bool ( true, 'Moving Average Crossover Info Panel',                                                                             group = 'Info Panel Properties' )
+i_c_panel_bg = input.color (color.rgb ( 0, 0, 0 ), "Panel Background",                                                                           group = 'Info Panel Properties' )
+i_c_panel_fr = input.color (color.rgb ( 126, 126, 126 ), "Panel Frame",                                                                          group = 'Info Panel Properties' )
+
+i_ma1_on = input.bool ( true, '',                                                                                                 inline = 'MA 1', group = 'Moving Average Properties' )
+i_ma2_on = input.bool ( true, '',                                                                                                 inline = 'MA 2', group = 'Moving Average Properties' )
+i_ma3_on = input.bool ( false,'',                                                                                                 inline = 'MA 3', group = 'Moving Average Properties' )
+i_ma4_on = input.bool ( true, '',                                                                                                 inline = 'MA 4', group = 'Moving Average Properties' )
+i_ma5_on = input.bool ( true, '',                                                                                                 inline = 'MA 5', group = 'Moving Average Properties' )
+i_ma6_on = input.bool ( true, '',                                                                                                 inline = 'MA 6', group = 'Moving Average Properties' )
+i_ma7_on = input.bool ( false,'',                                                                                                 inline = 'MA 7', group = 'Moving Average Properties' )
+i_ma8_on = input.bool ( true, '',                                                                                                 inline = 'MA 8', group = 'Moving Average Properties' )
+i_ma9_on = input.bool ( false,'',                                                                                                 inline = 'MA 9', group = 'Moving Average Properties' )
+
+i_c_ma1 = input.color (color.rgb ( 255, 0, 0 ),     'MA1',                                                                      inline = 'MA 1', group = 'Moving Average Properties' )
+i_c_ma2 = input.color (color.rgb ( 0, 140, 255 ),   'MA2',                                                                      inline = 'MA 2', group = 'Moving Average Properties' )
+i_c_ma3 = input.color (color.rgb ( 255, 255, 255 ), 'MA3',                                                                      inline = 'MA 3', group = 'Moving Average Properties' )
+i_c_ma4 = input.color (color.rgb ( 255, 153, 0 ),   'MA4',                                                                      inline = 'MA 4', group = 'Moving Average Properties' )
+i_c_ma5 = input.color (color.rgb ( 255, 230, 0 ),   'MA5',                                                                      inline = 'MA 5', group = 'Moving Average Properties' )
+i_c_ma6 = input.color (color.rgb ( 4, 255, 133 ),   'MA6',                                                                      inline = 'MA 6', group = 'Moving Average Properties' )
+i_c_ma7 = input.color (color.rgb ( 1, 224, 253 ),   'MA7',                                                                      inline = 'MA 7', group = 'Moving Average Properties' )
+i_c_ma8 = input.color (color.rgb ( 217, 0, 255 ),   'MA8',                                                                      inline = 'MA 8', group = 'Moving Average Properties' )
+i_c_ma9 = input.color (color.rgb ( 93, 0, 109 ),    'MA9',                                                                      inline = 'MA 9', group = 'Moving Average Properties' )
+
+i_l_ma1 = input.int ( 10,   'Length', minval = 1,                                                                                 inline = 'MA 1', group = 'Moving Average Properties' )
+i_l_ma2 = input.int ( 30,   'Length', minval = 1,                                                                                 inline = 'MA 2', group = 'Moving Average Properties' )
+i_l_ma3 = input.int ( 200,  'Length', minval = 1,                                                                                 inline = 'MA 3', group = 'Moving Average Properties' )
+i_l_ma4 = input.int ( 9,    'Length', minval = 1,                                                                                 inline = 'MA 4', group = 'Moving Average Properties' )
+i_l_ma5 = input.int ( 21,   'Length', minval = 1,                                                                                 inline = 'MA 5', group = 'Moving Average Properties' )
+i_l_ma6 = input.int ( 55,   'Length', minval = 1,                                                                                 inline = 'MA 6', group = 'Moving Average Properties' )
+i_l_ma7 = input.int ( 89,   'Length', minval = 1,                                                                                 inline = 'MA 7', group = 'Moving Average Properties' )
+i_l_ma8 = input.int ( 200,  'Length', minval = 1,                                                                                 inline = 'MA 8', group = 'Moving Average Properties' )
+i_l_ma9 = input.int ( 377,  'Length', minval = 1,                                                                                 inline = 'MA 9', group = 'Moving Average Properties' )
+
+i_t_ma1 = input.string ( 'SMA', 'Type', options = [ 'SMA', 'EMA' ],                                                               inline = 'MA 1', group = 'Moving Average Properties' )
+i_t_ma2 = input.string ( 'SMA', 'Type', options = [ 'SMA', 'EMA' ],                                                               inline = 'MA 2', group = 'Moving Average Properties' )
+i_t_ma3 = input.string ( 'SMA', 'Type', options = [ 'SMA', 'EMA' ],                                                               inline = 'MA 3', group = 'Moving Average Properties' )
+i_t_ma4 = input.string ( 'EMA', 'Type', options = [ 'SMA', 'EMA' ],                                                               inline = 'MA 4', group = 'Moving Average Properties' )
+i_t_ma5 = input.string ( 'EMA', 'Type', options = [ 'SMA', 'EMA' ],                                                               inline = 'MA 5', group = 'Moving Average Properties' )
+i_t_ma6 = input.string ( 'EMA', 'Type', options = [ 'SMA', 'EMA' ],                                                               inline = 'MA 6', group = 'Moving Average Properties' )
+i_t_ma7 = input.string ( 'EMA', 'Type', options = [ 'SMA', 'EMA' ],                                                               inline = 'MA 7', group = 'Moving Average Properties' )
+i_t_ma8 = input.string ( 'EMA', 'Type', options = [ 'SMA', 'EMA' ],                                                               inline = 'MA 8', group = 'Moving Average Properties' )
+i_t_ma9 = input.string ( 'EMA', 'Type', options = [ 'SMA', 'EMA' ],                                                               inline = 'MA 9', group = 'Moving Average Properties' )
+
+i_p1_on = input.bool ( true, '',                                                                                                  inline = 'Pair 1', group = 'Moving Average Crossover Pairs' )
+i_p2_on = input.bool ( true, '',                                                                                                  inline = 'Pair 2', group = 'Moving Average Crossover Pairs' )
+i_p3_on = input.bool ( true, '',                                                                                                  inline = 'Pair 3', group = 'Moving Average Crossover Pairs' )
+i_p4_on = input.bool ( true, '',                                                                                                  inline = 'Pair 4', group = 'Moving Average Crossover Pairs' )
+i_p5_on = input.bool ( true, '',                                                                                                  inline = 'Pair 5', group = 'Moving Average Crossover Pairs' )
+
+i_c_p1 = input.color (color.rgb ( 255, 146, 146 ) , '',                                                                         inline = 'Pair 1', group = 'Moving Average Crossover Pairs' )
+i_c_p2 = input.color (color.rgb ( 131, 199, 255 ) , '',                                                                         inline = 'Pair 2', group = 'Moving Average Crossover Pairs' )
+i_c_p3 = input.color (color.rgb ( 153, 153, 153 ) , '',                                                                         inline = 'Pair 3', group = 'Moving Average Crossover Pairs' )
+i_c_p4 = input.color (color.rgb ( 255, 242, 125 ) , '',                                                                         inline = 'Pair 4', group = 'Moving Average Crossover Pairs' )
+i_c_p5 = input.color (color.rgb ( 134, 71, 145 ) ,  '',                                                                         inline = 'Pair 5', group = 'Moving Average Crossover Pairs' )
+
+i_p1_1 = input.string ( t1, 'Pair 1', options = [ t1, t2, t3, t4, t5, t6, t7, t8, t9 ],                                           inline = 'Pair 1', group = 'Moving Average Crossover Pairs' )
+i_p1_2 = input.string ( t2, '',       options = [ t1, t2, t3, t4, t5, t6, t7, t8, t9 ],                                           inline = 'Pair 1', group = 'Moving Average Crossover Pairs' )
+i_p2_1 = input.string ( t4, 'Pair 2', options = [ t1, t2, t3, t4, t5, t6, t7, t8, t9 ],                                           inline = 'Pair 2', group = 'Moving Average Crossover Pairs' )
+i_p2_2 = input.string ( t5, '',       options = [ t1, t2, t3, t4, t5, t6, t7, t8, t9 ],                                           inline = 'Pair 2', group = 'Moving Average Crossover Pairs' )
+i_p3_1 = input.string ( t4, 'Pair 3', options = [ t1, t2, t3, t4, t5, t6, t7, t8, t9 ],                                           inline = 'Pair 3', group = 'Moving Average Crossover Pairs' )
+i_p3_2 = input.string ( t6, '',       options = [ t1, t2, t3, t4, t5, t6, t7, t8, t9 ],                                           inline = 'Pair 3', group = 'Moving Average Crossover Pairs' )
+i_p4_1 = input.string ( t5, 'Pair 4', options = [ t1, t2, t3, t4, t5, t6, t7, t8, t9 ],                                           inline = 'Pair 4', group = 'Moving Average Crossover Pairs' )
+i_p4_2 = input.string ( t6, '',       options = [ t1, t2, t3, t4, t5, t6, t7, t8, t9 ],                                           inline = 'Pair 4', group = 'Moving Average Crossover Pairs' )
+i_p5_1 = input.string ( t6, 'Pair 5', options = [ t1, t2, t3, t4, t5, t6, t7, t8, t9 ],                                           inline = 'Pair 5', group = 'Moving Average Crossover Pairs' )
+i_p5_2 = input.string ( t8, '',       options = [ t1, t2, t3, t4, t5, t6, t7, t8, t9 ],                                           inline = 'Pair 5', group = 'Moving Average Crossover Pairs' )
+
+///////////////////////////////////////////////////////////////////////////////
+// Function Declarations
+
+f_alpha ( X ) =>
+    2 / ( X + 1 )
+
+f_p_sum ( P, X ) =>
+    math.sum ( P[1], X - 1 )
+
+f_trunc ( Val, DecPl ) =>
+    int ( Val * math.pow ( 10, DecPl )) / math.pow ( 10, DecPl )
+
+f_MA ( P, typ, len) =>
+    typ == 'SMA' ? ta.sma ( P, len ) : ta.ema ( P, len )
+
+f_index ( MA, A, B, C, D, E, F, G, H, I, a, b, c, d, e, f, g, h, i ) =>
+    MA == A ? a : MA == B ? b : MA == C ? c : MA == D ? d : MA == E ? e : MA == F ? f : MA == G ? g : MA == H ? h : i
+
+f_MA_text ( MA, A, B, C, D, E, F, G, H, I, a, b, c, d, e, f, g, h, i, J, K, L, M, N, O, P, Q, R ) =>
+    MAtyp = f_index ( MA, A, B, C, D, E, F, G, H, I, a, b, c, d, e, f, g, h, i )
+    MAlen = f_index ( MA, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R )
+    str.tostring ( MAlen ) + ' ' + MAtyp
+
+f_ma_cross ( P, A, B, X, Y ) =>
+    pSumX = f_p_sum ( P, X )
+    pSumY = f_p_sum ( P, Y )
+    pEmaX = ta.ema ( P[1], X )
+    pEmaY = ta.ema ( P[1], Y )
+    aX = f_alpha ( X )
+    aY = f_alpha ( Y )
+    A=='SMA'and B=='SMA' ? (pSumX*Y-pSumY*X)/(X-Y) : A=='EMA'and B=='EMA'? (pEmaX-aX*pEmaX-(pEmaY-aY*pEmaY))/(aY-aX) : A=='EMA'and B=='SMA' ? (pEmaX*Y-pEmaX*aX*Y-pSumY)/(1-aX*Y) : (pEmaY*X-pEmaY*aY*X-pSumX)/(1-aY*X)
+
+f_ma_X_val ( Price, dec, m1, m2, A, B, C, D, E, F, G, H, I, a, b, c, d, e, f, g, h, i, J, K, L, M, N, O, P, Q, R ) =>
+    typ1 = f_index ( m1, A, B, C, D, E, F, G, H, I, a, b, c, d, e, f, g, h, i )
+    typ2 = f_index ( m2, A, B, C, D, E, F, G, H, I, a, b, c, d, e, f, g, h, i )
+    val1 = f_index ( m1, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R )
+    val2 = f_index ( m2, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R )
+    rawval = f_ma_cross ( Price, typ1, typ2, val1, val2 )
+    return_1 = rawval > 0 ? rawval : 0
+    f_trunc ( return_1, dec )
+
+f_cross_text ( price, cross_val ) =>
+    cross_val > 0 and price > cross_val ? ' Close Below : ' + str.tostring(cross_val) + ' ' : cross_val > 0 ? ' Close Above : ' + str.tostring(cross_val) + ' ' : ' Impossible '
+
+f_txt_line ( Price, dplaces, pma1, pma2, pcross, A, B, C, D, E, F, G, H, I, a, b, c, d, e, f, g, h, i, J, K, L, M, N, O, P, Q, R )  =>
+    ma1typ  = f_MA_text ( pma1, A, B, C, D, E, F, G, H, I, a, b, c, d, e, f, g, h, i, J, K, L, M, N, O, P, Q, R )
+    ma2typ  = f_MA_text ( pma2, A, B, C, D, E, F, G, H, I, a, b, c, d, e, f, g, h, i, J, K, L, M, N, O, P, Q, R )
+    pma1typ = f_index ( pma1, A, B, C, D, E, F, G, H, I, a, b, c, d, e, f, g, h, i )
+    pma1len = f_index ( pma1, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R )
+    pma2typ = f_index ( pma2, A, B, C, D, E, F, G, H, I, a, b, c, d, e, f, g, h, i )
+    pma2len = f_index ( pma2, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R )
+    pma1val = f_MA ( Price, pma1typ, pma1len )
+    pma2val = f_MA ( Price, pma2typ, pma2len )
+    crupdn = pma1val > pma2val ? ' Cross Below ' : ' Cross Above '
+    closeab = f_cross_text ( Price, pcross )
+    '\n\n' + ma1typ  + crupdn + ma2typ + closeab
+
+f_box_txt ( price, dpl, p1on, p1_1, p1_2, p1x, p2on, p2_1, p2_2, p2x, p3on, p3_1, p3_2, p3x, p4on, p4_1, p4_2, p4x, p5on, p5_1, p5_2, p5x, A, B, C, D, E, F, G, H, I, a, b, c, d, e, f, g, h, i, J, K, L, M, N, O, P, Q, R ) =>
+    p1txt = p1on ? f_txt_line ( price, dpl, p1_1, p1_2, p1x, A, B, C, D, E, F, G, H, I, a, b, c, d, e, f, g, h, i, J, K, L, M, N, O, P, Q, R ) : na
+    p2txt = p2on ? f_txt_line ( price, dpl, p2_1, p2_2, p2x, A, B, C, D, E, F, G, H, I, a, b, c, d, e, f, g, h, i, J, K, L, M, N, O, P, Q, R ) : na
+    p3txt = p3on ? f_txt_line ( price, dpl, p3_1, p3_2, p3x, A, B, C, D, E, F, G, H, I, a, b, c, d, e, f, g, h, i, J, K, L, M, N, O, P, Q, R ) : na
+    p4txt = p4on ? f_txt_line ( price, dpl, p4_1, p4_2, p4x, A, B, C, D, E, F, G, H, I, a, b, c, d, e, f, g, h, i, J, K, L, M, N, O, P, Q, R ) : na
+    p5txt = p5on ? f_txt_line ( price, dpl, p5_1, p5_2, p5x, A, B, C, D, E, F, G, H, I, a, b, c, d, e, f, g, h, i, J, K, L, M, N, O, P, Q, R ) : na
+    return_2 = 'MOVING AVERAGE CROSSOVER LEVELS' + p1txt + p2txt + p3txt + p4txt + p5txt
+    return_2
+
+///////////////////////////////////////////////////////////////////////////////
+// MA Calculations
+
+ma_1 = f_MA ( i_price, i_t_ma1, i_l_ma1 )
+ma_2 = f_MA ( i_price, i_t_ma2, i_l_ma2 )
+ma_3 = f_MA ( i_price, i_t_ma3, i_l_ma3 )
+ma_4 = f_MA ( i_price, i_t_ma4, i_l_ma4 )
+ma_5 = f_MA ( i_price, i_t_ma5, i_l_ma5 )
+ma_6 = f_MA ( i_price, i_t_ma6, i_l_ma6 )
+ma_7 = f_MA ( i_price, i_t_ma7, i_l_ma7 )
+ma_8 = f_MA ( i_price, i_t_ma8, i_l_ma8 )
+ma_9 = f_MA ( i_price, i_t_ma9, i_l_ma9 )
+
+p1_1_c = f_index ( i_p1_1, t1, t2, t3, t4, t5, t6, t7, t8, t9, i_c_ma1, i_c_ma2, i_c_ma3, i_c_ma4, i_c_ma5, i_c_ma6, i_c_ma7, i_c_ma8, i_c_ma9 )
+p1_2_c = f_index ( i_p1_2, t1, t2, t3, t4, t5, t6, t7, t8, t9, i_c_ma1, i_c_ma2, i_c_ma3, i_c_ma4, i_c_ma5, i_c_ma6, i_c_ma7, i_c_ma8, i_c_ma9 )
+p2_1_c = f_index ( i_p2_1, t1, t2, t3, t4, t5, t6, t7, t8, t9, i_c_ma1, i_c_ma2, i_c_ma3, i_c_ma4, i_c_ma5, i_c_ma6, i_c_ma7, i_c_ma8, i_c_ma9 )
+p2_2_c = f_index ( i_p2_2, t1, t2, t3, t4, t5, t6, t7, t8, t9, i_c_ma1, i_c_ma2, i_c_ma3, i_c_ma4, i_c_ma5, i_c_ma6, i_c_ma7, i_c_ma8, i_c_ma9 )
+p3_1_c = f_index ( i_p3_1, t1, t2, t3, t4, t5, t6, t7, t8, t9, i_c_ma1, i_c_ma2, i_c_ma3, i_c_ma4, i_c_ma5, i_c_ma6, i_c_ma7, i_c_ma8, i_c_ma9 )
+p3_2_c = f_index ( i_p3_2, t1, t2, t3, t4, t5, t6, t7, t8, t9, i_c_ma1, i_c_ma2, i_c_ma3, i_c_ma4, i_c_ma5, i_c_ma6, i_c_ma7, i_c_ma8, i_c_ma9 )
+p4_1_c = f_index ( i_p4_1, t1, t2, t3, t4, t5, t6, t7, t8, t9, i_c_ma1, i_c_ma2, i_c_ma3, i_c_ma4, i_c_ma5, i_c_ma6, i_c_ma7, i_c_ma8, i_c_ma9 )
+p4_2_c = f_index ( i_p4_2, t1, t2, t3, t4, t5, t6, t7, t8, t9, i_c_ma1, i_c_ma2, i_c_ma3, i_c_ma4, i_c_ma5, i_c_ma6, i_c_ma7, i_c_ma8, i_c_ma9 )
+p5_1_c = f_index ( i_p5_1, t1, t2, t3, t4, t5, t6, t7, t8, t9, i_c_ma1, i_c_ma2, i_c_ma3, i_c_ma4, i_c_ma5, i_c_ma6, i_c_ma7, i_c_ma8, i_c_ma9 )
+p5_2_c = f_index ( i_p5_2, t1, t2, t3, t4, t5, t6, t7, t8, t9, i_c_ma1, i_c_ma2, i_c_ma3, i_c_ma4, i_c_ma5, i_c_ma6, i_c_ma7, i_c_ma8, i_c_ma9 )
+
+p1_1_ma = f_index ( i_p1_1, t1, t2, t3, t4, t5, t6, t7, t8, t9, ma_1, ma_2, ma_3, ma_4, ma_5, ma_6, ma_7, ma_8, ma_9 )
+p1_2_ma = f_index ( i_p1_2, t1, t2, t3, t4, t5, t6, t7, t8, t9, ma_1, ma_2, ma_3, ma_4, ma_5, ma_6, ma_7, ma_8, ma_9 )
+p2_1_ma = f_index ( i_p2_1, t1, t2, t3, t4, t5, t6, t7, t8, t9, ma_1, ma_2, ma_3, ma_4, ma_5, ma_6, ma_7, ma_8, ma_9 )
+p2_2_ma = f_index ( i_p2_2, t1, t2, t3, t4, t5, t6, t7, t8, t9, ma_1, ma_2, ma_3, ma_4, ma_5, ma_6, ma_7, ma_8, ma_9 )
+p3_1_ma = f_index ( i_p3_1, t1, t2, t3, t4, t5, t6, t7, t8, t9, ma_1, ma_2, ma_3, ma_4, ma_5, ma_6, ma_7, ma_8, ma_9 )
+p3_2_ma = f_index ( i_p3_2, t1, t2, t3, t4, t5, t6, t7, t8, t9, ma_1, ma_2, ma_3, ma_4, ma_5, ma_6, ma_7, ma_8, ma_9 )
+p4_1_ma = f_index ( i_p4_1, t1, t2, t3, t4, t5, t6, t7, t8, t9, ma_1, ma_2, ma_3, ma_4, ma_5, ma_6, ma_7, ma_8, ma_9 )
+p4_2_ma = f_index ( i_p4_2, t1, t2, t3, t4, t5, t6, t7, t8, t9, ma_1, ma_2, ma_3, ma_4, ma_5, ma_6, ma_7, ma_8, ma_9 )
+p5_1_ma = f_index ( i_p5_1, t1, t2, t3, t4, t5, t6, t7, t8, t9, ma_1, ma_2, ma_3, ma_4, ma_5, ma_6, ma_7, ma_8, ma_9 )
+p5_2_ma = f_index ( i_p5_2, t1, t2, t3, t4, t5, t6, t7, t8, t9, ma_1, ma_2, ma_3, ma_4, ma_5, ma_6, ma_7, ma_8, ma_9 )
+
+p1_1_t = f_MA_text ( i_p1_1, t1, t2, t3, t4, t5, t6, t7, t8, t9, i_t_ma1, i_t_ma2, i_t_ma3, i_t_ma4, i_t_ma5, i_t_ma6, i_t_ma7, i_t_ma8, i_t_ma9, i_l_ma1, i_l_ma2, i_l_ma3, i_l_ma4, i_l_ma5, i_l_ma6, i_l_ma7, i_l_ma8, i_l_ma9 )
+p1_2_t = f_MA_text ( i_p1_2, t1, t2, t3, t4, t5, t6, t7, t8, t9, i_t_ma1, i_t_ma2, i_t_ma3, i_t_ma4, i_t_ma5, i_t_ma6, i_t_ma7, i_t_ma8, i_t_ma9, i_l_ma1, i_l_ma2, i_l_ma3, i_l_ma4, i_l_ma5, i_l_ma6, i_l_ma7, i_l_ma8, i_l_ma9 )
+p2_1_t = f_MA_text ( i_p2_1, t1, t2, t3, t4, t5, t6, t7, t8, t9, i_t_ma1, i_t_ma2, i_t_ma3, i_t_ma4, i_t_ma5, i_t_ma6, i_t_ma7, i_t_ma8, i_t_ma9, i_l_ma1, i_l_ma2, i_l_ma3, i_l_ma4, i_l_ma5, i_l_ma6, i_l_ma7, i_l_ma8, i_l_ma9 )
+p2_2_t = f_MA_text ( i_p2_2, t1, t2, t3, t4, t5, t6, t7, t8, t9, i_t_ma1, i_t_ma2, i_t_ma3, i_t_ma4, i_t_ma5, i_t_ma6, i_t_ma7, i_t_ma8, i_t_ma9, i_l_ma1, i_l_ma2, i_l_ma3, i_l_ma4, i_l_ma5, i_l_ma6, i_l_ma7, i_l_ma8, i_l_ma9 )
+p3_1_t = f_MA_text ( i_p3_1, t1, t2, t3, t4, t5, t6, t7, t8, t9, i_t_ma1, i_t_ma2, i_t_ma3, i_t_ma4, i_t_ma5, i_t_ma6, i_t_ma7, i_t_ma8, i_t_ma9, i_l_ma1, i_l_ma2, i_l_ma3, i_l_ma4, i_l_ma5, i_l_ma6, i_l_ma7, i_l_ma8, i_l_ma9 )
+p3_2_t = f_MA_text ( i_p3_2, t1, t2, t3, t4, t5, t6, t7, t8, t9, i_t_ma1, i_t_ma2, i_t_ma3, i_t_ma4, i_t_ma5, i_t_ma6, i_t_ma7, i_t_ma8, i_t_ma9, i_l_ma1, i_l_ma2, i_l_ma3, i_l_ma4, i_l_ma5, i_l_ma6, i_l_ma7, i_l_ma8, i_l_ma9 )
+p4_1_t = f_MA_text ( i_p4_1, t1, t2, t3, t4, t5, t6, t7, t8, t9, i_t_ma1, i_t_ma2, i_t_ma3, i_t_ma4, i_t_ma5, i_t_ma6, i_t_ma7, i_t_ma8, i_t_ma9, i_l_ma1, i_l_ma2, i_l_ma3, i_l_ma4, i_l_ma5, i_l_ma6, i_l_ma7, i_l_ma8, i_l_ma9 )
+p4_2_t = f_MA_text ( i_p4_2, t1, t2, t3, t4, t5, t6, t7, t8, t9, i_t_ma1, i_t_ma2, i_t_ma3, i_t_ma4, i_t_ma5, i_t_ma6, i_t_ma7, i_t_ma8, i_t_ma9, i_l_ma1, i_l_ma2, i_l_ma3, i_l_ma4, i_l_ma5, i_l_ma6, i_l_ma7, i_l_ma8, i_l_ma9 )
+p5_1_t = f_MA_text ( i_p5_1, t1, t2, t3, t4, t5, t6, t7, t8, t9, i_t_ma1, i_t_ma2, i_t_ma3, i_t_ma4, i_t_ma5, i_t_ma6, i_t_ma7, i_t_ma8, i_t_ma9, i_l_ma1, i_l_ma2, i_l_ma3, i_l_ma4, i_l_ma5, i_l_ma6, i_l_ma7, i_l_ma8, i_l_ma9 )
+p5_2_t = f_MA_text ( i_p5_2, t1, t2, t3, t4, t5, t6, t7, t8, t9, i_t_ma1, i_t_ma2, i_t_ma3, i_t_ma4, i_t_ma5, i_t_ma6, i_t_ma7, i_t_ma8, i_t_ma9, i_l_ma1, i_l_ma2, i_l_ma3, i_l_ma4, i_l_ma5, i_l_ma6, i_l_ma7, i_l_ma8, i_l_ma9 )
+
+p1_X = f_ma_X_val ( i_price, i_d_pl, i_p1_1, i_p1_2, t1, t2, t3, t4, t5, t6, t7, t8, t9, i_t_ma1, i_t_ma2, i_t_ma3, i_t_ma4, i_t_ma5, i_t_ma6, i_t_ma7, i_t_ma8, i_t_ma9, i_l_ma1, i_l_ma2, i_l_ma3, i_l_ma4, i_l_ma5, i_l_ma6, i_l_ma7, i_l_ma8, i_l_ma9 )
+p2_X = f_ma_X_val ( i_price, i_d_pl, i_p2_1, i_p2_2, t1, t2, t3, t4, t5, t6, t7, t8, t9, i_t_ma1, i_t_ma2, i_t_ma3, i_t_ma4, i_t_ma5, i_t_ma6, i_t_ma7, i_t_ma8, i_t_ma9, i_l_ma1, i_l_ma2, i_l_ma3, i_l_ma4, i_l_ma5, i_l_ma6, i_l_ma7, i_l_ma8, i_l_ma9 )
+p3_X = f_ma_X_val ( i_price, i_d_pl, i_p3_1, i_p3_2, t1, t2, t3, t4, t5, t6, t7, t8, t9, i_t_ma1, i_t_ma2, i_t_ma3, i_t_ma4, i_t_ma5, i_t_ma6, i_t_ma7, i_t_ma8, i_t_ma9, i_l_ma1, i_l_ma2, i_l_ma3, i_l_ma4, i_l_ma5, i_l_ma6, i_l_ma7, i_l_ma8, i_l_ma9 )
+p4_X = f_ma_X_val ( i_price, i_d_pl, i_p4_1, i_p4_2, t1, t2, t3, t4, t5, t6, t7, t8, t9, i_t_ma1, i_t_ma2, i_t_ma3, i_t_ma4, i_t_ma5, i_t_ma6, i_t_ma7, i_t_ma8, i_t_ma9, i_l_ma1, i_l_ma2, i_l_ma3, i_l_ma4, i_l_ma5, i_l_ma6, i_l_ma7, i_l_ma8, i_l_ma9 )
+p5_X = f_ma_X_val ( i_price, i_d_pl, i_p5_1, i_p5_2, t1, t2, t3, t4, t5, t6, t7, t8, t9, i_t_ma1, i_t_ma2, i_t_ma3, i_t_ma4, i_t_ma5, i_t_ma6, i_t_ma7, i_t_ma8, i_t_ma9, i_l_ma1, i_l_ma2, i_l_ma3, i_l_ma4, i_l_ma5, i_l_ma6, i_l_ma7, i_l_ma8, i_l_ma9 )
+
+///////////////////////////////////////////////////////////////////////////////
+// Label Calculation
+
+label_text = f_box_txt ( i_price, i_d_pl, i_p1_on, i_p1_1, i_p1_2, p1_X, i_p2_on, i_p2_1, i_p2_2, p2_X, i_p3_on, i_p3_1, i_p3_2, p3_X, i_p4_on, i_p4_1, i_p4_2, p4_X, i_p5_on, i_p5_1, i_p5_2, p5_X, t1, t2, t3, t4, t5, t6, t7, t8, t9, i_t_ma1, i_t_ma2, i_t_ma3, i_t_ma4, i_t_ma5, i_t_ma6, i_t_ma7, i_t_ma8, i_t_ma9, i_l_ma1, i_l_ma2, i_l_ma3, i_l_ma4, i_l_ma5, i_l_ma6, i_l_ma7, i_l_ma8, i_l_ma9 )
+
+label_X_Loc = time_close + ( time_close - time_close[1] ) * i_box_oSet
+
+////////////////////////////////////////////////////////////////////////////////
+// Display Calculation
+
+p_p1_1_t = p1_1_ma > p1_2_ma ? p1_1_t : p1_2_t
+p_p1_2_t = p1_1_ma > p1_2_ma ? p1_2_t : p1_1_t
+p_p2_1_t = p2_1_ma > p2_2_ma ? p2_1_t : p2_2_t
+p_p2_2_t = p2_1_ma > p2_2_ma ? p2_2_t : p2_1_t
+p_p3_1_t = p3_1_ma > p3_2_ma ? p3_1_t : p3_2_t
+p_p3_2_t = p3_1_ma > p3_2_ma ? p3_2_t : p3_1_t
+p_p4_1_t = p4_1_ma > p4_2_ma ? p4_1_t : p4_2_t
+p_p4_2_t = p4_1_ma > p4_2_ma ? p4_2_t : p4_1_t
+p_p5_1_t = p5_1_ma > p5_2_ma ? p5_1_t : p5_2_t
+p_p5_2_t = p5_1_ma > p5_2_ma ? p5_2_t : p5_1_t
+
+p_p1_1_c = p1_1_ma > p1_2_ma ? p1_1_c : p1_2_c
+p_p1_2_c = p1_1_ma > p1_2_ma ? p1_2_c : p1_1_c
+p_p2_1_c = p2_1_ma > p2_2_ma ? p2_1_c : p2_2_c
+p_p2_2_c = p2_1_ma > p2_2_ma ? p2_2_c : p2_1_c
+p_p3_1_c = p3_1_ma > p3_2_ma ? p3_1_c : p3_2_c
+p_p3_2_c = p3_1_ma > p3_2_ma ? p3_2_c : p3_1_c
+p_p4_1_c = p4_1_ma > p4_2_ma ? p4_1_c : p4_2_c
+p_p4_2_c = p4_1_ma > p4_2_ma ? p4_2_c : p4_1_c
+p_p5_1_c = p5_1_ma > p5_2_ma ? p5_1_c : p5_2_c
+p_p5_2_c = p5_1_ma > p5_2_ma ? p5_2_c : p5_1_c
+
+p1_X_t = f_cross_text ( i_price, p1_X )
+p2_X_t = f_cross_text ( i_price, p2_X )
+p3_X_t = f_cross_text ( i_price, p3_X )
+p4_X_t = f_cross_text ( i_price, p4_X )
+p5_X_t = f_cross_text ( i_price, p5_X )
+
+
+if barstate.islast and i_panel_on
+
+    var table panel = table.new ( position.top_right, 2, 12, frame_color = i_c_panel_fr, frame_width = 2, border_color = i_c_panel_fr, border_width = 1 )
+
+    table.cell ( panel, 0, 0, "MOVING AVERAGE CROSS LEVELS", height = 8,    bgcolor = i_c_panel_bg, text_color = color.white )
+    table.merge_cells ( panel, 0, 0, 1, 0 )
+    table.cell ( panel, 0, 1, "MA Pairs",                                   bgcolor = i_c_panel_bg, text_color = color.white )
+    table.cell ( panel, 1, 1, "Cross Condition",                            bgcolor = i_c_panel_bg, text_color = color.white )
+
+    if i_p1_on
+        table.cell ( panel, 0, 2, p_p1_1_t,                                 bgcolor = i_c_panel_bg, text_color = p_p1_1_c )
+        table.cell ( panel, 0, 3, p_p1_2_t,                                 bgcolor = i_c_panel_bg, text_color = p_p1_2_c )
+        table.cell ( panel, 1, 2, p1_X_t,                                   bgcolor = i_c_panel_bg, text_color = i_c_p1 )
+        table.merge_cells ( panel, 1, 2, 1, 3 )
+
+    if i_p2_on
+        table.cell ( panel, 0, 4, p_p2_1_t,                                 bgcolor = i_c_panel_bg, text_color = p_p2_1_c )
+        table.cell ( panel, 0, 5, p_p2_2_t,                                 bgcolor = i_c_panel_bg, text_color = p_p2_2_c )
+        table.cell ( panel, 1, 4, p2_X_t,                                   bgcolor = i_c_panel_bg, text_color = i_c_p2 )
+        table.merge_cells ( panel, 1, 4, 1, 5 )
+
+    if i_p3_on
+        table.cell ( panel, 0, 6, p_p3_1_t,                                 bgcolor = i_c_panel_bg, text_color = p_p3_1_c )
+        table.cell ( panel, 0, 7, p_p3_2_t,                                 bgcolor = i_c_panel_bg, text_color = p_p3_2_c )
+        table.cell ( panel, 1, 6, p3_X_t,                                   bgcolor = i_c_panel_bg, text_color = i_c_p3 )
+        table.merge_cells ( panel, 1, 6, 1, 7 )
+
+    if i_p4_on
+        table.cell ( panel, 0, 8, p_p4_1_t,                                 bgcolor = i_c_panel_bg, text_color = p_p4_1_c )
+        table.cell ( panel, 0, 9, p_p4_2_t,                                 bgcolor = i_c_panel_bg, text_color = p_p4_2_c )
+        table.cell ( panel, 1, 8, p4_X_t,                                   bgcolor = i_c_panel_bg, text_color = i_c_p4 )
+        table.merge_cells ( panel, 1, 8, 1, 9 )
+
+    if i_p5_on
+        table.cell ( panel, 0, 10, p_p5_1_t,                                bgcolor = i_c_panel_bg, text_color = p_p5_1_c )
+        table.cell ( panel, 0, 11, p_p5_2_t,                                bgcolor = i_c_panel_bg, text_color = p_p5_2_c )
+        table.cell ( panel, 1, 10, p5_X_t,                                  bgcolor = i_c_panel_bg, text_color = i_c_p5 )
+        table.merge_cells ( panel, 1, 10, 1, 11 )
+
+///////////////////////////////////////////////////////////////////////////////
+// Line Plots
+
+plot ( i_ma1_on and i_mas_on ? ma_1 : na, 'MA 1', i_c_ma1, 2 )
+plot ( i_ma2_on and i_mas_on ? ma_2 : na, 'MA 2', i_c_ma2, 2 )
+plot ( i_ma3_on and i_mas_on ? ma_3 : na, 'MA 3', i_c_ma3, 2 )
+plot ( i_ma4_on and i_mas_on ? ma_4 : na, 'MA 4', i_c_ma4, 2 )
+plot ( i_ma5_on and i_mas_on ? ma_5 : na, 'MA 5', i_c_ma5, 2 )
+plot ( i_ma6_on and i_mas_on ? ma_6 : na, 'MA 6', i_c_ma6, 2 )
+plot ( i_ma7_on and i_mas_on ? ma_7 : na, 'MA 7', i_c_ma7, 2 )
+plot ( i_ma8_on and i_mas_on ? ma_8 : na, 'MA 8', i_c_ma8, 2 )
+plot ( i_ma9_on and i_mas_on ? ma_9 : na, 'MA 9', i_c_ma9, 2 )
+
+plot ( i_p1_on and i_x_ln_on ? p1_X : na, 'MA Crossover Pair 1', i_c_p1, 1 )
+plot ( i_p2_on and i_x_ln_on ? p2_X : na, 'MA Crossover Pair 2', i_c_p2, 1 )
+plot ( i_p3_on and i_x_ln_on ? p3_X : na, 'MA Crossover Pair 3', i_c_p3, 1 )
+plot ( i_p4_on and i_x_ln_on ? p4_X : na, 'MA Crossover Pair 4', i_c_p4, 1 )
+plot ( i_p5_on and i_x_ln_on ? p5_X : na, 'MA Crossover Pair 5', i_c_p5, 1 )
+
+///////////////////////////////////////////////////////////////////////////////
+// Label Plots
+
+label = i_box_on ? label.new ( label_X_Loc, hlc3, label_text, xloc.bar_time, yloc.price, color.black, label.style_label_left, color.white, size = size.normal ) : na
+
+label.delete ( label[1] )
+
+///////////////////////////////////////////////////////////////////////////////
+// End

@@ -1,0 +1,47 @@
+// © zyqxd
+
+//@version=5
+// NOTE(DZ):
+// calc_on_every_tick => allow entry on every tick
+// calc_on_order_fills => allow exit on same bar as entry
+strategy("Silver cross", overlay=true, max_bars_back=1000, calc_on_order_fills=true, calc_on_every_tick=true, default_qty_type=strategy.percent_of_equity, default_qty_value=10, initial_capital=10000)
+
+// Input - debug
+i_debug         = input.bool     (false, title='Debug', group='Debug')
+
+// Calclations - MA
+ema_21 = ta.ema(close, 21)
+ema_55 = ta.ema(close, 55)
+plot(ema_21, color=color.yellow, title='EMA 21')
+plot(ema_55, color=color.green, title='EMA 55')
+
+// Strategy - MA cross
+long_cond = ema_21 > ema_55 // ta.crossover(ema_21, ema_55)
+short_cond = ema_21 < ema_55 // ta.crossunder(ema_21, ema_55)
+
+// Debug
+plot(i_debug ? strategy.position_avg_price : na, color=color.orange, title='Position Avg Price')
+plot(i_debug ? strategy.position_size : na, color=color.orange, title='Position Size')
+plot(i_debug ? strategy.opentrades : na, color=color.orange, title='Open trades')
+
+// Entries
+// NOTE(DZ): Only allow entry if no other positions were closed in the same bar
+// or if the last closed position was not in the same bar
+allow_entry = barstate.isconfirmed
+                  // strategy.closedtrades == 0 or
+                  // (bar_index != strategy.closedtrades.exit_bar_index(strategy.closedtrades - 1))
+
+if long_cond and allow_entry
+    // line.new(bar_index, close, bar_index, open, color=color.blue, extend=extend.both)
+    strategy.entry("long", strategy.long, limit=ema_21, comment="🔼 🟢")
+
+if short_cond and allow_entry
+    // line.new(bar_index, close, bar_index, open, color=color.purple, extend=extend.both)
+    strategy.entry("short", strategy.short, limit=ema_21, comment="🔽 🟢")
+
+// Risk management: 55 EMA
+if strategy.position_size > 0 and close < ema_55
+    strategy.close_all(comment="🛑 55")
+
+if strategy.position_size < 0 and close > ema_55
+    strategy.close_all(comment="🛑 55")
