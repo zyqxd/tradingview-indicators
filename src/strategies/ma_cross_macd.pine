@@ -1,0 +1,90 @@
+//@version=5
+//© zyqxd
+
+strategy(title = "Moving average convergence divergence crossover strategy",
+     overlay = true,
+     precision = 8,
+     pyramiding = 0,
+     initial_capital = 10000,
+     currency = currency.NONE,
+     default_qty_type = strategy.percent_of_equity,
+     default_qty_value = 100,
+     commission_type = "percent",
+     commission_value = 0.06)
+
+default_from = timestamp("1 Jan 2021 00:00 -0500")
+default_to   = timestamp("1 Jan 2100 00:00 -0500")
+
+// --- Input: Backtest
+i_from_date      = input.time      (default_from, title = "From",           group = 'Backtest')
+i_to_date        = input.time      (default_to,   title = "To",             group = 'Backtest')
+
+// --- Input: Calculations
+i_fast_ma        = input.int       (21,           title = "Fast MA",        group = 'Calculations')
+i_slow_ma        = input.int       (55,           title = "Slow MA",        group = 'Calculations')
+i_signal_ma      = input.int       (13,           title = "Signal MA",      group = 'Calculations')
+i_ma_source      = input.string    ("EMA",        title = "MA Source",      group = 'Calculations', options=["SMA", "EMA"])
+
+// --- Input: Debug
+i_debug          = input.bool      (false,        title = 'Debug',          group = 'Debug')
+
+// --- Input: Functions
+f_emergency_close ( comment ) =>
+    strategy.close_all(comment=comment, alert_message = 'Emergency Close')
+
+// --- Calculations
+fast_ma   = i_ma_source == "SMA" ? ta.sma(close, i_fast_ma) : ta.ema(close, i_fast_ma)
+slow_ma   = i_ma_source == "SMA" ? ta.sma(close, i_slow_ma) : ta.ema(close, i_slow_ma)
+signal_ma = i_ma_source == "SMA" ? ta.sma(close, i_signal_ma) : ta.ema(close, i_signal_ma)
+macd      = fast_ma - slow_ma
+signal    = i_ma_source == "SMA" ? ta.sma(macd, i_signal_ma) : ta.ema(macd, i_signal_ma)
+hist      = macd - signal
+
+in_window = time >= i_from_date and time < i_to_date ? true : false
+
+// --- Debug
+bgcolor (color = i_debug and in_window ? color.new(color.white, 92) : na)
+plot    (fast_ma,  title = 'Fast MA',      color = color.yellow)
+plot    (slow_ma,  title = 'Slow MA',      color = color.green)
+
+// --- Entry conditions
+long_cond = ta.crossover(fast_ma, slow_ma)
+short_cond = ta.crossunder(fast_ma, slow_ma)
+
+allow_entry = in_window and
+                  barstate.isconfirmed and
+                  strategy.position_size == 0 and
+                  (strategy.closedtrades == 0 or
+                  (bar_index != strategy.closedtrades.exit_bar_index(strategy.closedtrades - 1)))
+
+if long_cond and allow_entry
+    strategy.entry("long", strategy.long, comment="🔼🟢")
+
+if short_cond
+    f_emergency_close('🔼🛑')
+// if short_cond and allow_entry
+//     strategy.entry("short", strategy.short, comment="🔽🟢")
+
+// --- Risk management: 55 EMA
+if strategy.position_size > 0 and close < slow_ma
+    f_emergency_close('🔼🛑')
+
+if strategy.position_size < 0 and close > slow_ma
+    f_emergency_close('️🔽🛑')
+
+// --- Take profit / stop brackets - long
+if strategy.position_size > 0
+    // limit = strategy.position_avg_price * (1 + 0.5)
+    stop = strategy.position_avg_price * (1 - 0.05)
+
+    // strategy.exit("1", "long", qty_percent=50, limit=limit, comment="🔼⭐️")
+    strategy.exit("3", "long", stop=stop, comment="🛑")
+
+// --- Take profit / stop brackets - short
+if strategy.position_size < 0
+    l1 = strategy.position_avg_price * (1 - 0.05)
+    l2 = strategy.position_avg_price * (1 - 0.1)
+    stop = strategy.position_avg_price * (1 + 0.05)
+    strategy.exit("1", "short", qty_percent=20, limit=l1, comment="🔽⭐️")
+    strategy.exit("2", "short", qty_percent=30, limit=l2, comment="🔽⭐️")
+    strategy.exit("3", "short", stop=stop, comment="🛑")

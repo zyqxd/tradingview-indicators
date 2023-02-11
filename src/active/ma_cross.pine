@@ -1,0 +1,87 @@
+//@version=5
+//© zyqxd
+// Best used on 6 hours with default settings
+
+strategy(title = "Moving average crossover strategy",
+     shorttitle = "MAC-strat",
+     overlay = true,
+     precision = 8,
+     pyramiding = 0,
+     initial_capital = 10000,
+     currency = currency.NONE,
+     default_qty_type = strategy.percent_of_equity,
+     default_qty_value = 100,
+     commission_type = "percent",
+     commission_value = 0.06)
+
+default_from = timestamp("1 Jan 2021 00:00 -0500")
+default_to   = timestamp("1 Jan 2023 00:00 -0500")
+
+// --- Input: Backtest
+i_from_date      = input.time      (default_from, title = "From",           group = 'Backtest')
+i_to_date        = input.time      (default_to,   title = "To",             group = 'Backtest')
+i_take_longs     = input.bool      (true,         title = "Take longs",     group = 'Backtest')
+i_take_shorts    = input.bool      (true,         title = "Take shorts",    group = 'Backtest')
+i_long_tp        = input.float     (0.6,          title = "Long 50% TP",    group = 'Backtest')
+i_long_sl        = input.float     (0.05,         title = "Long SL",        group = 'Backtest')
+i_short_tp       = input.float     (0.05,         title = "Short 50% TP",   group = 'Backtest')
+i_short_sl       = input.float     (0.05,         title = "Short SL",       group = 'Backtest')
+
+// --- Input: Calculations
+i_fast_ma        = input.int       (21,           title = "Fast MA",        group = 'Calculations')
+i_slow_ma        = input.int       (55,           title = "Slow MA",        group = 'Calculations')
+i_ma_source      = input.string    ("EMA",        title = "MA Source",      group = 'Calculations', options=["SMA", "EMA"])
+
+// --- Input: Debug
+i_debug          = input.bool      (false,        title = 'Debug',          group = 'Debug')
+
+// --- Input: Functions
+f_alert_message ( base ) =>
+    str.format("[{0}] {1} @ {2}", timeframe.period, base, close)
+
+// --- Calculations
+fast_ma   = i_ma_source == "SMA" ? ta.sma(close, i_fast_ma) : ta.ema(close, i_fast_ma)
+slow_ma   = i_ma_source == "SMA" ? ta.sma(close, i_slow_ma) : ta.ema(close, i_slow_ma)
+
+in_window = time >= i_from_date and time < i_to_date ? true : false
+
+// --- Debug
+bgcolor (color = i_debug and in_window ? color.new(color.white, 92) : na)
+plot    (fast_ma,  title = 'Fast MA',      color = color.yellow)
+plot    (slow_ma,  title = 'Slow MA',      color = color.green)
+
+// --- Entry conditions
+long_cond = ta.crossover(fast_ma, slow_ma)
+short_cond = ta.crossunder(fast_ma, slow_ma)
+allow_entry = in_window and
+                  barstate.isconfirmed and
+                  strategy.position_size == 0 and
+                  (strategy.closedtrades == 0 or
+                  (bar_index != strategy.closedtrades.exit_bar_index(strategy.closedtrades - 1)))
+
+if i_take_longs and long_cond and allow_entry
+    strategy.entry("long", strategy.long, comment="🔼🟢", alert_message = f_alert_message('long entry'))
+
+if i_take_shorts and short_cond and allow_entry
+    strategy.entry("short", strategy.short, comment="🔽🟢", alert_message = f_alert_message('short entry'))
+
+// --- Risk management: 55 EMA
+if strategy.position_size > 0 and (short_cond or (close < slow_ma and close[1] < slow_ma[1]))
+    strategy.close_all(comment='🔼⚠️', alert_message = f_alert_message('emergency close'))
+
+if strategy.position_size < 0 and (long_cond or (close > slow_ma and close[1] < slow_ma[1]))
+    strategy.close_all(comment='️🔽⚠️', alert_message = f_alert_message('emergency close'))
+
+// --- Take profit / stop brackets - long
+if strategy.position_size > 0
+    limit = strategy.position_avg_price * (1 + i_long_tp)
+    stop = strategy.position_avg_price * (1 - i_long_sl)
+    strategy.exit("1", "long", qty_percent=50, limit=limit, comment="🔼⭐️", alert_message=f_alert_message('long tp'))
+    strategy.exit("2", "long", stop=stop, comment="🔼🛑", alert_message=f_alert_message('long stop'))
+
+// --- Take profit / stop brackets - short
+if strategy.position_size < 0
+    limit = strategy.position_avg_price * (1 - i_short_tp)
+    stop = strategy.position_avg_price * (1 + i_short_sl)
+    strategy.exit("1", "short", qty_percent=50, limit=limit, comment="🔽⭐️", alert_message=f_alert_message('short tp'))
+    strategy.exit("2", "short", stop=stop, comment="🔽🛑", alert_message=f_alert_message('short stop'))

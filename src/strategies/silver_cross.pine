@@ -1,47 +1,85 @@
 // © zyqxd
-
 //@version=5
+
 // NOTE(DZ):
 // calc_on_every_tick => allow entry on every tick
 // calc_on_order_fills => allow exit on same bar as entry
-strategy("Silver cross", overlay=true, max_bars_back=1000, calc_on_order_fills=true, calc_on_every_tick=true, default_qty_type=strategy.percent_of_equity, default_qty_value=10, initial_capital=10000)
+strategy("Silver cross", overlay=true, calc_on_order_fills=true, calc_on_every_tick=true, default_qty_type=strategy.percent_of_equity, default_qty_value=100, initial_capital=10000, pyramiding=0)
 
-// Input - debug
-i_debug         = input.bool     (false, title='Debug', group='Debug')
+// --- Input - calculations
+i_bbwpLen            = input.int      (13,              title='BBWP Length',             group='Calculations')
+i_bbwpLookback       = input.int      (252,             title='BBWP Lookback',           group='Calculations')
+i_bbwpThreshold      = input.int      (60,              title='BBWP Threshold',          group='Calculations')
 
-// Calclations - MA
+// --- Input - strategy
+i_start_date         = input.date     (2000-01-01,      title='Start date',              group='Strategy')
+i_end_date           = input.date     (2100-01-01,      title='End date',                group='Strategy')
+i_tp_long            = input.float    (50,  minval=0.1, title='Take profit long',        group='Strategy')
+i_tp_short           = input.float    (10,  minval=0.1, title='Take profit short',       group='Strategy')
+i_sl_long            = input.float    (5,   minval=0.1, title='Stop long',               group='Strategy')
+i_sl_short           = input.float    (5,   minval=0.1, title='Stop short',              group='Strategy')
+i_tp_qty_percent     = input.float    (40,  minval=0.1, title='Take profit qty percent', group='Strategy')
+
+// --- Input - debug
+i_debug              = input.bool     (false,           title='Debug',                   group='Debug')
+
+// --- Functions
+f_bbwp ( bbwpLen, bbwpLookback ) =>
+    float basis = ta.sma(close, bbwpLen)
+    float dev = ta.stdev(close, bbwpLen)
+    _bbw = (( basis + dev ) - ( basis - dev )) / basis
+    _bbwSum = 0
+    for i = 1 to bbwpLookback
+        _bbwSum := _bbwSum + ( _bbw [i] > _bbw ? 0 : 1 )
+    ( _bbwSum / bbwpLookback ) * 100
+
+// --- Calculations - BBWP
+bbwp = f_bbwp(i_bbwpLen, i_bbwpLookback)
+bbwp_ma = ta.sma(bbwp, 5)
+
+// --- Calculations - MA
 ema_21 = ta.ema(close, 21)
 ema_55 = ta.ema(close, 55)
+
+// --- Debug
 plot(ema_21, color=color.yellow, title='EMA 21')
 plot(ema_55, color=color.green, title='EMA 55')
-
-// Strategy - MA cross
-long_cond = ema_21 > ema_55 // ta.crossover(ema_21, ema_55)
-short_cond = ema_21 < ema_55 // ta.crossunder(ema_21, ema_55)
-
-// Debug
 plot(i_debug ? strategy.position_avg_price : na, color=color.orange, title='Position Avg Price')
 plot(i_debug ? strategy.position_size : na, color=color.orange, title='Position Size')
 plot(i_debug ? strategy.opentrades : na, color=color.orange, title='Open trades')
 
-// Entries
-// NOTE(DZ): Only allow entry if no other positions were closed in the same bar
-// or if the last closed position was not in the same bar
-allow_entry = barstate.isconfirmed
-                  // strategy.closedtrades == 0 or
-                  // (bar_index != strategy.closedtrades.exit_bar_index(strategy.closedtrades - 1))
+// --- Entry conditions
+long_cond = ta.crossover(ema_21, ema_55) and bbwp < i_bbwpThreshold
+short_cond = ta.crossunder(ema_21, ema_55) and bbwp < i_bbwpThreshold
+allow_entry = barstate.isconfirmed and
+                  strategy.position_size == 0 and
+                  strategy.closedtrades == 0 or
+                  (bar_index != strategy.closedtrades.exit_bar_index(strategy.closedtrades - 1))
 
 if long_cond and allow_entry
-    // line.new(bar_index, close, bar_index, open, color=color.blue, extend=extend.both)
-    strategy.entry("long", strategy.long, limit=ema_21, comment="🔼 🟢")
+    line.new(bar_index, close, bar_index, open, color=color.blue, extend=extend.both)
+    strategy.entry("long", strategy.long, comment="🔼 🟢", alert_message = 'DZ silver cross: entry long alert')
 
 if short_cond and allow_entry
-    // line.new(bar_index, close, bar_index, open, color=color.purple, extend=extend.both)
-    strategy.entry("short", strategy.short, limit=ema_21, comment="🔽 🟢")
+    line.new(bar_index, close, bar_index, open, color=color.purple, extend=extend.both)
+    strategy.entry("short", strategy.short, comment="🔽 🟢", alert_message = 'DZ silver cross: entry short alert')
 
-// Risk management: 55 EMA
+// --- Risk management: 55 EMA
 if strategy.position_size > 0 and close < ema_55
-    strategy.close_all(comment="🛑 55")
+    strategy.close_all(comment="🛑 55", alert_message = 'DZ Silver cross: stop all alert')
 
 if strategy.position_size < 0 and close > ema_55
-    strategy.close_all(comment="🛑 55")
+    strategy.close_all(comment="🛑 55", alert_message = 'DZ Silver cross: stop all alert')
+
+// --- Take profit / edits
+if strategy.position_size > 0
+    limit = strategy.position_avg_price * (1 + i_tp_long / 100.0)
+    stop = strategy.position_avg_price * (1 - i_sl_short / 100.0)
+    strategy.exit("1", "long", qty_percent=i_tp_qty_percent, limit=limit, comment="🔼 ⭐️", alert_loss = 'DZ Silver Cross: long stop alert', alert_profit = 'DZ Silver cross: long tp alert')
+    strategy.exit("2", "long", stop=stop, comment="🔼 🛑", alert_loss = 'DZ silver cross: long stop alert')
+
+if strategy.position_size < 0
+    limit = strategy.position_avg_price * (1 - i_tp_short / 100.0)
+    stop = strategy.position_avg_price * (1 + i_sl_long / 100.0)
+    strategy.exit("1", "short", qty_percent=i_tp_qty_percent, limit=limit, comment="🔼 ⭐️", alert_loss = 'DZ Silver Cross: short stop alert', alert_profit = 'DZ Silver cross: short tp alert')
+    strategy.exit("2", "short", stop=stop, comment="🔼 🛑", alert_loss = 'DZ silver cross: short stop alert')
