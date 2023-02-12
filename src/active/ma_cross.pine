@@ -5,7 +5,7 @@
 strategy(title = "Moving average crossover strategy",
      shorttitle = "MAC-strat",
      overlay = true,
-     precision = 8,
+     precision = 2,
      pyramiding = 0,
      initial_capital = 10000,
      currency = currency.NONE,

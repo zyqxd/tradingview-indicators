@@ -4,7 +4,7 @@
 strategy(title = "BBWP Moving average crossover strategy",
      shorttitle = "BBWP+MAC-strat",
      overlay = true,
-     precision = 8,
+     precision = 2,
      pyramiding = 0,
      initial_capital = 10000,
      currency = currency.NONE,
