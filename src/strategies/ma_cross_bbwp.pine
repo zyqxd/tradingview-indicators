@@ -13,49 +13,93 @@ strategy(title = "BBWP Moving average crossover strategy",
      commission_type = "percent",
      commission_value = 0.06)
 
-var c_spctrm = array.new_color(na)
-if barstate.isfirst
-    array.push ( c_spctrm, #0000FF )
-    array.push ( c_spctrm, #000AFF ), array.push ( c_spctrm, #0014FF ), array.push ( c_spctrm, #001FFF ), array.push ( c_spctrm, #0029FF ), array.push ( c_spctrm, #0033FF ),
-    array.push ( c_spctrm, #003DFF ), array.push ( c_spctrm, #0047FF ), array.push ( c_spctrm, #0052FF ), array.push ( c_spctrm, #005CFF ), array.push ( c_spctrm, #0066FF ),
-    array.push ( c_spctrm, #0070FF ), array.push ( c_spctrm, #007AFF ), array.push ( c_spctrm, #0085FF ), array.push ( c_spctrm, #008FFF ), array.push ( c_spctrm, #0099FF ),
-    array.push ( c_spctrm, #00A3FF ), array.push ( c_spctrm, #00ADFF ), array.push ( c_spctrm, #00B8FF ), array.push ( c_spctrm, #00C2FF ), array.push ( c_spctrm, #00CCFF ),
-    array.push ( c_spctrm, #00D6FF ), array.push ( c_spctrm, #00E0FF ), array.push ( c_spctrm, #00EBFF ), array.push ( c_spctrm, #00F5FF ), array.push ( c_spctrm, #00FFFF ),
-    array.push ( c_spctrm, #00FFF5 ), array.push ( c_spctrm, #00FFEB ), array.push ( c_spctrm, #00FFE0 ), array.push ( c_spctrm, #00FFD6 ), array.push ( c_spctrm, #00FFCC ),
-    array.push ( c_spctrm, #00FFC2 ), array.push ( c_spctrm, #00FFB8 ), array.push ( c_spctrm, #00FFAD ), array.push ( c_spctrm, #00FFA3 ), array.push ( c_spctrm, #00FF99 ),
-    array.push ( c_spctrm, #00FF8F ), array.push ( c_spctrm, #00FF85 ), array.push ( c_spctrm, #00FF7A ), array.push ( c_spctrm, #00FF70 ), array.push ( c_spctrm, #00FF66 ),
-    array.push ( c_spctrm, #00FF5C ), array.push ( c_spctrm, #00FF52 ), array.push ( c_spctrm, #00FF47 ), array.push ( c_spctrm, #00FF3D ), array.push ( c_spctrm, #00FF33 ),
-    array.push ( c_spctrm, #00FF29 ), array.push ( c_spctrm, #00FF1F ), array.push ( c_spctrm, #00FF14 ), array.push ( c_spctrm, #00FF0A ), array.push ( c_spctrm, #00FF00 ),
-    array.push ( c_spctrm, #0AFF00 ), array.push ( c_spctrm, #14FF00 ), array.push ( c_spctrm, #1FFF00 ), array.push ( c_spctrm, #29FF00 ), array.push ( c_spctrm, #33FF00 ),
-    array.push ( c_spctrm, #3DFF00 ), array.push ( c_spctrm, #47FF00 ), array.push ( c_spctrm, #52FF00 ), array.push ( c_spctrm, #5CFF00 ), array.push ( c_spctrm, #66FF00 ),
-    array.push ( c_spctrm, #70FF00 ), array.push ( c_spctrm, #7AFF00 ), array.push ( c_spctrm, #85FF00 ), array.push ( c_spctrm, #8FFF00 ), array.push ( c_spctrm, #99FF00 ),
-    array.push ( c_spctrm, #A3FF00 ), array.push ( c_spctrm, #ADFF00 ), array.push ( c_spctrm, #B8FF00 ), array.push ( c_spctrm, #C2FF00 ), array.push ( c_spctrm, #CCFF00 ),
-    array.push ( c_spctrm, #D6FF00 ), array.push ( c_spctrm, #E0FF00 ), array.push ( c_spctrm, #EBFF00 ), array.push ( c_spctrm, #F5FF00 ), array.push ( c_spctrm, #FFFF00 ),
-    array.push ( c_spctrm, #FFF500 ), array.push ( c_spctrm, #FFEB00 ), array.push ( c_spctrm, #FFE000 ), array.push ( c_spctrm, #FFD600 ), array.push ( c_spctrm, #FFCC00 ),
-    array.push ( c_spctrm, #FFC200 ), array.push ( c_spctrm, #FFB800 ), array.push ( c_spctrm, #FFAD00 ), array.push ( c_spctrm, #FFA300 ), array.push ( c_spctrm, #FF9900 ),
-    array.push ( c_spctrm, #FF8F00 ), array.push ( c_spctrm, #FF8500 ), array.push ( c_spctrm, #FF7A00 ), array.push ( c_spctrm, #FF7000 ), array.push ( c_spctrm, #FF6600 ),
-    array.push ( c_spctrm, #FF5C00 ), array.push ( c_spctrm, #FF5200 ), array.push ( c_spctrm, #FF4700 ), array.push ( c_spctrm, #FF3D00 ), array.push ( c_spctrm, #FF3300 ),
-    array.push ( c_spctrm, #FF2900 ), array.push ( c_spctrm, #FF1F00 ), array.push ( c_spctrm, #FF1400 ), array.push ( c_spctrm, #FF0000 ), array.push ( c_spctrm, #FF0000 )
 
-default_from = timestamp("1 Jan 2021 00:00 -0500")
-default_to   = timestamp("1 Jan 2023 00:00 -0500")
+// --- Variable declaration
+var c_spctrm        = array.new_color(na)
+var default_from    = timestamp("1 Jan 2021 00:00 -0500")
+var default_to      = timestamp("1 Jan 2023 00:00 -0500")
+var armed_direction = 0
+var cc_bbwp         = 0
+
+// TODO(DZ): move this into library
+// https://www.tradingview.com/pine-script-docs/en/v5/concepts/Libraries.html#creating-a-library
+if barstate.isfirst
+    array.push ( c_spctrm, #0000FF ), array.push ( c_spctrm, #000AFF ),
+    array.push ( c_spctrm, #0014FF ), array.push ( c_spctrm, #001FFF ),
+    array.push ( c_spctrm, #0029FF ), array.push ( c_spctrm, #0033FF ),
+    array.push ( c_spctrm, #003DFF ), array.push ( c_spctrm, #0047FF ),
+    array.push ( c_spctrm, #0052FF ), array.push ( c_spctrm, #005CFF ),
+    array.push ( c_spctrm, #0066FF ), array.push ( c_spctrm, #0070FF ),
+    array.push ( c_spctrm, #007AFF ), array.push ( c_spctrm, #0085FF ),
+    array.push ( c_spctrm, #008FFF ), array.push ( c_spctrm, #0099FF ),
+    array.push ( c_spctrm, #00A3FF ), array.push ( c_spctrm, #00ADFF ),
+    array.push ( c_spctrm, #00B8FF ), array.push ( c_spctrm, #00C2FF ),
+    array.push ( c_spctrm, #00CCFF ), array.push ( c_spctrm, #00D6FF ),
+    array.push ( c_spctrm, #00E0FF ), array.push ( c_spctrm, #00EBFF ),
+    array.push ( c_spctrm, #00F5FF ), array.push ( c_spctrm, #00FFFF ),
+    array.push ( c_spctrm, #00FFF5 ), array.push ( c_spctrm, #00FFEB ),
+    array.push ( c_spctrm, #00FFE0 ), array.push ( c_spctrm, #00FFD6 ),
+    array.push ( c_spctrm, #00FFCC ), array.push ( c_spctrm, #00FFC2 ),
+    array.push ( c_spctrm, #00FFB8 ), array.push ( c_spctrm, #00FFAD ),
+    array.push ( c_spctrm, #00FFA3 ), array.push ( c_spctrm, #00FF99 ),
+    array.push ( c_spctrm, #00FF8F ), array.push ( c_spctrm, #00FF85 ),
+    array.push ( c_spctrm, #00FF7A ), array.push ( c_spctrm, #00FF70 ),
+    array.push ( c_spctrm, #00FF66 ), array.push ( c_spctrm, #00FF5C ),
+    array.push ( c_spctrm, #00FF52 ), array.push ( c_spctrm, #00FF47 ),
+    array.push ( c_spctrm, #00FF3D ), array.push ( c_spctrm, #00FF33 ),
+    array.push ( c_spctrm, #00FF29 ), array.push ( c_spctrm, #00FF1F ),
+    array.push ( c_spctrm, #00FF14 ), array.push ( c_spctrm, #00FF0A ),
+    array.push ( c_spctrm, #00FF00 ), array.push ( c_spctrm, #0AFF00 ),
+    array.push ( c_spctrm, #14FF00 ), array.push ( c_spctrm, #1FFF00 ),
+    array.push ( c_spctrm, #29FF00 ), array.push ( c_spctrm, #33FF00 ),
+    array.push ( c_spctrm, #3DFF00 ), array.push ( c_spctrm, #47FF00 ),
+    array.push ( c_spctrm, #52FF00 ), array.push ( c_spctrm, #5CFF00 ),
+    array.push ( c_spctrm, #66FF00 ), array.push ( c_spctrm, #70FF00 ),
+    array.push ( c_spctrm, #7AFF00 ), array.push ( c_spctrm, #85FF00 ),
+    array.push ( c_spctrm, #8FFF00 ), array.push ( c_spctrm, #99FF00 ),
+    array.push ( c_spctrm, #A3FF00 ), array.push ( c_spctrm, #ADFF00 ),
+    array.push ( c_spctrm, #B8FF00 ), array.push ( c_spctrm, #C2FF00 ),
+    array.push ( c_spctrm, #CCFF00 ), array.push ( c_spctrm, #D6FF00 ),
+    array.push ( c_spctrm, #E0FF00 ), array.push ( c_spctrm, #EBFF00 ),
+    array.push ( c_spctrm, #F5FF00 ), array.push ( c_spctrm, #FFFF00 ),
+    array.push ( c_spctrm, #FFF500 ), array.push ( c_spctrm, #FFEB00 ),
+    array.push ( c_spctrm, #FFE000 ), array.push ( c_spctrm, #FFD600 ),
+    array.push ( c_spctrm, #FFCC00 ), array.push ( c_spctrm, #FFC200 ),
+    array.push ( c_spctrm, #FFB800 ), array.push ( c_spctrm, #FFAD00 ),
+    array.push ( c_spctrm, #FFA300 ), array.push ( c_spctrm, #FF9900 ),
+    array.push ( c_spctrm, #FF8F00 ), array.push ( c_spctrm, #FF8500 ),
+    array.push ( c_spctrm, #FF7A00 ), array.push ( c_spctrm, #FF7000 ),
+    array.push ( c_spctrm, #FF6600 ), array.push ( c_spctrm, #FF5C00 ),
+    array.push ( c_spctrm, #FF5200 ), array.push ( c_spctrm, #FF4700 ),
+    array.push ( c_spctrm, #FF3D00 ), array.push ( c_spctrm, #FF3300 ),
+    array.push ( c_spctrm, #FF2900 ), array.push ( c_spctrm, #FF1F00 ),
+    array.push ( c_spctrm, #FF1400 ), array.push ( c_spctrm, #FF0000 ),
+    array.push ( c_spctrm, #FF0000 )
+
 
 // --- Input: Backtest
-i_from_date      = input.time      (default_from, title = "From",           group = 'Backtest')
-i_to_date        = input.time      (default_to,   title = "To",             group = 'Backtest')
-i_take_longs     = input.bool      (true,         title = "Take longs",     group = 'Backtest')
-i_take_shorts    = input.bool      (true,         title = "Take shorts",    group = 'Backtest')
+i_from_date      = input.time      (default_from, title = "From",                    group = 'Backtest')
+i_to_date        = input.time      (default_to,   title = "To",                      group = 'Backtest')
+i_take_longs     = input.bool      (true,         title = "Take longs",              group = 'Backtest')
+i_take_shorts    = input.bool      (true,         title = "Take shorts",             group = 'Backtest')
+i_cc_stop        = input.int       (2,            title = "Consecutive closes stop", group = 'Backtest')
+
 
 // --- Input: Calculations
-i_fast_ma        = input.int       (21,           title = "Fast MA",        group = 'Calculations')
-i_slow_ma        = input.int       (55,           title = "Slow MA",        group = 'Calculations')
-i_bbwp_len       = input.int       (13,           title = 'BBWP Length',    group = 'Calculations')
-i_bbwp_lookback  = input.int       (252,          title = 'BBWP Lookback',  group = 'Calculations')
-i_bbwp_ma_len    = input.int       (7,            title = 'BBWP MA Length', group = 'Calculations')
-i_bbwp_tf        = input.timeframe ("D",          title = 'Slow BBWP TF',   group = 'Calculations')
+i_fast_ma        = input.int       (21,           title = "Fast MA",                 group = 'Calculations')
+i_slow_ma        = input.int       (55,           title = "Slow MA",                 group = 'Calculations')
+i_bbwp_len       = input.int       (55,           title = 'BBWP Length',             group = 'Calculations')
+i_bbwp_lookback  = input.int       (252,          title = 'BBWP Lookback',           group = 'Calculations')
+i_bbwp_threshold = input.int       (20,           title = 'BBWP Threshold',          group = 'Calculations')
+i_bbwp_ma_len    = input.int       (7,            title = 'BBWP MA Length',          group = 'Calculations')
+i_bbwp_ma_type   = input.string    ('EMA',        title = 'BBWP MA Type',            group = 'Calculations', options = ['SMA', 'EMA'])
+i_bbwp_tf        = input.timeframe ('D',          title = 'BBWP Timeframe',          group = 'Calculations')
+i_bbwp_cc_cond   = input.int       (3,            title = 'BBWP Consecutive cond',   group = 'Calculations')
+
 
 // --- Input: Debug
-i_debug          = input.bool      (false,        title = 'Debug',          group = 'Debug')
+i_debug          = input.bool      (false,        title = 'Debug',                   group = 'Debug')
+
 
 // --- Input: Functions
 f_bbwp ( bbwp_len, bbwp_lookback ) =>
@@ -73,55 +117,90 @@ f_clr_slct ( _percent, _array1 ) =>
 f_emergency_close ( comment ) =>
     strategy.close_all(comment=comment, alert_message = 'Emergency Close')
 
+f_trade_possible () =>
+    barstate.isconfirmed and
+       strategy.position_size == 0 and
+       (strategy.closedtrades == 0 or
+       bar_index != strategy.closedtrades.exit_bar_index(strategy.closedtrades - 1))
+
+f_stop_cond ( series_1, series_2 ) =>
+    bool _cond = true
+    for offset = 0 to i_cc_stop - 1
+        _cond := _cond and series_1[offset] < series_2[offset]
+    _cond
+
+f_bbwp_cond ( bbwp, bbwp_threshold ) =>
+    _count = 0
+    for offset = 0 to i_bbwp_cc_cond - 1
+        if bbwp[offset] < bbwp_threshold
+            _count := _count + 1
+    _count == i_bbwp_cc_cond
+
 // --- Calculations
-bbwp      = request.security(syminfo.ticker, i_bbwp_tf, f_bbwp(i_bbwp_len, i_bbwp_lookback))
-bbwp_ma   = request.security(syminfo.ticker, i_bbwp_tf, ta.sma(bbwp, i_bbwp_ma_len))
-bbwp_c    = f_clr_slct(bbwp, c_spctrm)
-fast_ma   = ta.ema(close, i_fast_ma)
-slow_ma   = ta.ema(close, i_slow_ma)
-in_window = time >= i_from_date and time < i_to_date ? true : false
-in_bbwp   = bbwp >= bbwp_ma
+bbwp        = request.security(syminfo.ticker, i_bbwp_tf, f_bbwp(i_bbwp_len, i_bbwp_lookback))
+bbwp_ma     = request.security(syminfo.ticker,
+                               i_bbwp_tf,
+                               i_bbwp_ma_type == 'SMA' ?
+                               ta.sma(bbwp, i_bbwp_ma_len) :
+                               ta.ema(bbwp, i_bbwp_ma_len))
+
+bbwp_c      = f_clr_slct(bbwp, c_spctrm)
+fast_ma     = ta.ema(close, i_fast_ma)
+slow_ma     = ta.ema(close, i_slow_ma)
+long_cross  = ta.crossover(fast_ma, slow_ma)
+short_cross = ta.crossunder(fast_ma, slow_ma)
+
+armed_direction := long_cross ? 1 : short_cross ? -1 : armed_direction
+
+cond_window = time >= i_from_date and time < i_to_date ? true : false
+cond_bbwp   = request.security(syminfo.ticker, i_bbwp_tf, f_bbwp_cond(bbwp, i_bbwp_threshold))
+cond_long   = cond_bbwp and cond_window and armed_direction == 1
+cond_short  = cond_bbwp and cond_window and armed_direction == -1
 
 // --- Debug
-bgcolor (color = i_debug and in_window and in_bbwp ? color.new(bbwp_c, 90) : na)
+show_debug = i_debug and cond_window and cond_bbwp
+
 plot    (bbwp,     title = 'BBWP',         color = bbwp_c)
-plot    (bbwp_ma,  title = 'BBWP MA',      color = color.white)
+plot    (cond_bbwp ? 1 : 0,  title = 'BBWP CC',      color = color.white)
+plot    (armed_direction, title = 'Armed', color = armed_direction == 1 ? color.green : armed_direction == -1 ? color.red : color.white)
 plot    (fast_ma,  title = 'Fast MA',      color = color.yellow)
 plot    (slow_ma,  title = 'Slow MA',      color = color.green)
+bgcolor (color = show_debug ? color.new(bbwp_c, 50) : na)
+// bgcolor (color = color.new(armed_direction == 1 ? color.green : color.red, 90))
 
 // --- Entry conditions
-long_cond = ta.crossover(fast_ma, slow_ma)
-short_cond = ta.crossunder(fast_ma, slow_ma)
-
-allow_entry = in_window and in_bbwp and
-                  barstate.isconfirmed and
-                  strategy.position_size == 0 and
-                  (strategy.closedtrades == 0 or
-                  (bar_index != strategy.closedtrades.exit_bar_index(strategy.closedtrades - 1)))
-
-if i_take_longs and long_cond and allow_entry
+if i_take_longs and cond_long and f_trade_possible()
     strategy.entry("long", strategy.long, comment="🔼🟢")
 
-if i_take_shorts and short_cond and allow_entry
+if i_take_shorts and cond_short and f_trade_possible()
     strategy.entry("short", strategy.short, comment="🔽🟢")
 
-// --- Risk management: Slow MA closure or reverse signal
-if strategy.position_size > 0 and (short_cond or close < slow_ma)
-    f_emergency_close('🔼🛑')
 
-if strategy.position_size < 0 and (long_cond or close > slow_ma)
-    f_emergency_close('️🔽🛑')
+// --- Risk management: Slow MA closure or reverse signal
+if strategy.position_size > 0 and short_cross
+    f_emergency_close('🔄')
+
+if strategy.position_size > 0 and f_stop_cond(close, slow_ma)
+    f_emergency_close('🛑')
+
+if strategy.position_size < 0 and long_cross
+    f_emergency_close('🔄')
+
+if strategy.position_size < 0 and f_stop_cond(slow_ma, close)
+    f_emergency_close('️🛑')
+
 
 // --- Take profit / stop brackets - long
 if strategy.position_size > 0
     limit = strategy.position_avg_price * (1 + 0.5)
     stop = strategy.position_avg_price * (1 - 0.05)
-    strategy.exit("1", "long", qty_percent=50, limit=limit, comment="🔼⭐️", alert_loss = 'DZ Silver Cross: long stop alert', alert_profit = 'DZ Silver cross: long tp alert')
-    strategy.exit("2", "long", stop=stop, comment="🔽🛑", alert_loss = 'DZ silver cross: long stop alert')
+    strategy.exit("1", "long", qty_percent=50, limit=limit, comment="🔼⭐️")
+    strategy.exit("2", "long", stop=stop, comment="🔽🛑")
+
 
 // --- Take profit / stop brackets - short
 if strategy.position_size < 0
     limit = strategy.position_avg_price * (1 - 0.1)
     stop = strategy.position_avg_price * (1 + 0.05)
-    strategy.exit("1", "short", qty_percent=50, limit=limit, comment="🔽⭐️", alert_loss = 'DZ Silver Cross: short stop alert', alert_profit = 'DZ Silver cross: short tp alert')
-    strategy.exit("2", "short", stop=stop, comment="🔽🛑", alert_loss = 'DZ silver cross: short stop alert')
+    strategy.exit("1", "short", qty_percent=50, limit=limit, comment="🔽⭐️")
+    strategy.exit("2", "short", stop=stop, comment="🔽🛑")
