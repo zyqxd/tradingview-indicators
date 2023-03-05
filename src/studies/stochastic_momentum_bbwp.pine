@@ -1,68 +1,17 @@
 //@version=5
 //© zyqxd
 indicator("Stochastic Momentum with BBWP", shorttitle = "SM+BBWP", overlay=false)
+import zyqxd/ColorRGB/2 as colorRGB
 
 var c_spctrm = array.new_color(na)
-// TODO(DZ): move this into library
-// https://www.tradingview.com/pine-script-docs/en/v5/concepts/Libraries.html#creating-a-library
 if barstate.isfirst
-    array.push ( c_spctrm, #0000FF ), array.push ( c_spctrm, #000AFF ),
-    array.push ( c_spctrm, #0014FF ), array.push ( c_spctrm, #001FFF ),
-    array.push ( c_spctrm, #0029FF ), array.push ( c_spctrm, #0033FF ),
-    array.push ( c_spctrm, #003DFF ), array.push ( c_spctrm, #0047FF ),
-    array.push ( c_spctrm, #0052FF ), array.push ( c_spctrm, #005CFF ),
-    array.push ( c_spctrm, #0066FF ), array.push ( c_spctrm, #0070FF ),
-    array.push ( c_spctrm, #007AFF ), array.push ( c_spctrm, #0085FF ),
-    array.push ( c_spctrm, #008FFF ), array.push ( c_spctrm, #0099FF ),
-    array.push ( c_spctrm, #00A3FF ), array.push ( c_spctrm, #00ADFF ),
-    array.push ( c_spctrm, #00B8FF ), array.push ( c_spctrm, #00C2FF ),
-    array.push ( c_spctrm, #00CCFF ), array.push ( c_spctrm, #00D6FF ),
-    array.push ( c_spctrm, #00E0FF ), array.push ( c_spctrm, #00EBFF ),
-    array.push ( c_spctrm, #00F5FF ), array.push ( c_spctrm, #00FFFF ),
-    array.push ( c_spctrm, #00FFF5 ), array.push ( c_spctrm, #00FFEB ),
-    array.push ( c_spctrm, #00FFE0 ), array.push ( c_spctrm, #00FFD6 ),
-    array.push ( c_spctrm, #00FFCC ), array.push ( c_spctrm, #00FFC2 ),
-    array.push ( c_spctrm, #00FFB8 ), array.push ( c_spctrm, #00FFAD ),
-    array.push ( c_spctrm, #00FFA3 ), array.push ( c_spctrm, #00FF99 ),
-    array.push ( c_spctrm, #00FF8F ), array.push ( c_spctrm, #00FF85 ),
-    array.push ( c_spctrm, #00FF7A ), array.push ( c_spctrm, #00FF70 ),
-    array.push ( c_spctrm, #00FF66 ), array.push ( c_spctrm, #00FF5C ),
-    array.push ( c_spctrm, #00FF52 ), array.push ( c_spctrm, #00FF47 ),
-    array.push ( c_spctrm, #00FF3D ), array.push ( c_spctrm, #00FF33 ),
-    array.push ( c_spctrm, #00FF29 ), array.push ( c_spctrm, #00FF1F ),
-    array.push ( c_spctrm, #00FF14 ), array.push ( c_spctrm, #00FF0A ),
-    array.push ( c_spctrm, #00FF00 ), array.push ( c_spctrm, #0AFF00 ),
-    array.push ( c_spctrm, #14FF00 ), array.push ( c_spctrm, #1FFF00 ),
-    array.push ( c_spctrm, #29FF00 ), array.push ( c_spctrm, #33FF00 ),
-    array.push ( c_spctrm, #3DFF00 ), array.push ( c_spctrm, #47FF00 ),
-    array.push ( c_spctrm, #52FF00 ), array.push ( c_spctrm, #5CFF00 ),
-    array.push ( c_spctrm, #66FF00 ), array.push ( c_spctrm, #70FF00 ),
-    array.push ( c_spctrm, #7AFF00 ), array.push ( c_spctrm, #85FF00 ),
-    array.push ( c_spctrm, #8FFF00 ), array.push ( c_spctrm, #99FF00 ),
-    array.push ( c_spctrm, #A3FF00 ), array.push ( c_spctrm, #ADFF00 ),
-    array.push ( c_spctrm, #B8FF00 ), array.push ( c_spctrm, #C2FF00 ),
-    array.push ( c_spctrm, #CCFF00 ), array.push ( c_spctrm, #D6FF00 ),
-    array.push ( c_spctrm, #E0FF00 ), array.push ( c_spctrm, #EBFF00 ),
-    array.push ( c_spctrm, #F5FF00 ), array.push ( c_spctrm, #FFFF00 ),
-    array.push ( c_spctrm, #FFF500 ), array.push ( c_spctrm, #FFEB00 ),
-    array.push ( c_spctrm, #FFE000 ), array.push ( c_spctrm, #FFD600 ),
-    array.push ( c_spctrm, #FFCC00 ), array.push ( c_spctrm, #FFC200 ),
-    array.push ( c_spctrm, #FFB800 ), array.push ( c_spctrm, #FFAD00 ),
-    array.push ( c_spctrm, #FFA300 ), array.push ( c_spctrm, #FF9900 ),
-    array.push ( c_spctrm, #FF8F00 ), array.push ( c_spctrm, #FF8500 ),
-    array.push ( c_spctrm, #FF7A00 ), array.push ( c_spctrm, #FF7000 ),
-    array.push ( c_spctrm, #FF6600 ), array.push ( c_spctrm, #FF5C00 ),
-    array.push ( c_spctrm, #FF5200 ), array.push ( c_spctrm, #FF4700 ),
-    array.push ( c_spctrm, #FF3D00 ), array.push ( c_spctrm, #FF3300 ),
-    array.push ( c_spctrm, #FF2900 ), array.push ( c_spctrm, #FF1F00 ),
-    array.push ( c_spctrm, #FF1400 ), array.push ( c_spctrm, #FF0000 ),
-    array.push ( c_spctrm, #FF0000 )
+    colorRGB.fill_124(c_spctrm)
 
-i_k              = input.int ( 14,  title = "K Length",       group = 'Stoch')
-i_d              = input.int ( 3,   title = "D Length",       group = 'Stoch')
-i_bbwp_len       = input.int ( 55,  title = 'BBWP Length',    group = 'BBWP')
-i_bbwp_lookback  = input.int ( 252, title = 'BBWP Lookback',  group = 'BBWP')
-i_bbwp_ma_len    = input.int ( 5,   title = 'BBWP MA Length', group = 'BBWP')
+i_k              = input.int ( 14,  title = "Percent K Length", group = 'Stoch')
+i_d              = input.int ( 3,   title = "Percent D Length", group = 'Stoch')
+i_bbwp_len       = input.int ( 55,  title = 'BBWP Length',      group = 'BBWP')
+i_bbwp_lookback  = input.int ( 252, title = 'BBWP Lookback',    group = 'BBWP')
+i_bbwp_ma_len    = input.int ( 5,   title = 'BBWP MA Length',   group = 'BBWP')
 
 // --- Functions
 f_bbwp ( bbwp_len, bbwp_lookback ) =>
@@ -97,13 +46,12 @@ signal = ta.ema(smi, i_d)
 // --- Plots
 plot(smi,       title = "Stochastic Momentum Index", color = color.aqua,    linewidth = 2)
 plot(signal,    title = "SMI Signal Line",           color = color.fuchsia, linewidth = 2)
-plot(bbwp,      title = "BBWP",                      color = bbwp_c,        linewidth = 1)
+plot(bbwp,      title = "BBWP",                      color = bbwp_c,          linewidth = 1)
 plot(bbwp_ma,   title = "BBWP MA",                   color = color.white,   linewidth = 1)
-
-hline(100,    linestyle = hline.style_solid)
-hline(50,     linestyle = hline.style_solid, color = color.new(color.white, 80))
-hline(0,      linestyle = hline.style_solid)
 
 h = hline(80, linestyle = hline.style_solid, color = color.new(color.white, 100))
 l = hline(20, linestyle = hline.style_solid, color = color.new(color.white, 100))
+hline(100,    linestyle = hline.style_solid)
+hline(0,      linestyle = hline.style_solid)
+hline(50,     linestyle = hline.style_solid, color = color.new(color.white, 80))
 fill(l, h, color=color.new(color.purple, 90))

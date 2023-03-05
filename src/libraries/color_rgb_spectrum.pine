@@ -1,0 +1,63 @@
+//@version=5
+// @description Color - rgb spectrum array
+// https://www.tradingview.com/script/JIHexOKr-ColorRGB/
+library('ColorRGB', false)
+
+// @function Generate an array of colors in the rbg spectrum. Only call this
+// function once, and store the result in a variable. The array length is 124.
+// @paramter c_array Empty array pointer
+// @returns color[]
+export fill_124 (color[] c_array) =>
+    array.push ( c_array, #0000FF ), array.push ( c_array, #000AFF ),
+    array.push ( c_array, #0014FF ), array.push ( c_array, #001FFF ),
+    array.push ( c_array, #0029FF ), array.push ( c_array, #0033FF ),
+    array.push ( c_array, #003DFF ), array.push ( c_array, #0047FF ),
+    array.push ( c_array, #0052FF ), array.push ( c_array, #005CFF ),
+    array.push ( c_array, #0066FF ), array.push ( c_array, #0070FF ),
+    array.push ( c_array, #007AFF ), array.push ( c_array, #0085FF ),
+    array.push ( c_array, #008FFF ), array.push ( c_array, #0099FF ),
+    array.push ( c_array, #00A3FF ), array.push ( c_array, #00ADFF ),
+    array.push ( c_array, #00B8FF ), array.push ( c_array, #00C2FF ),
+    array.push ( c_array, #00CCFF ), array.push ( c_array, #00D6FF ),
+    array.push ( c_array, #00E0FF ), array.push ( c_array, #00EBFF ),
+    array.push ( c_array, #00F5FF ), array.push ( c_array, #00FFFF ),
+    array.push ( c_array, #00FFF5 ), array.push ( c_array, #00FFEB ),
+    array.push ( c_array, #00FFE0 ), array.push ( c_array, #00FFD6 ),
+    array.push ( c_array, #00FFCC ), array.push ( c_array, #00FFC2 ),
+    array.push ( c_array, #00FFB8 ), array.push ( c_array, #00FFAD ),
+    array.push ( c_array, #00FFA3 ), array.push ( c_array, #00FF99 ),
+    array.push ( c_array, #00FF8F ), array.push ( c_array, #00FF85 ),
+    array.push ( c_array, #00FF7A ), array.push ( c_array, #00FF70 ),
+    array.push ( c_array, #00FF66 ), array.push ( c_array, #00FF5C ),
+    array.push ( c_array, #00FF52 ), array.push ( c_array, #00FF47 ),
+    array.push ( c_array, #00FF3D ), array.push ( c_array, #00FF33 ),
+    array.push ( c_array, #00FF29 ), array.push ( c_array, #00FF1F ),
+    array.push ( c_array, #00FF14 ), array.push ( c_array, #00FF0A ),
+    array.push ( c_array, #00FF00 ), array.push ( c_array, #0AFF00 ),
+    array.push ( c_array, #14FF00 ), array.push ( c_array, #1FFF00 ),
+    array.push ( c_array, #29FF00 ), array.push ( c_array, #33FF00 ),
+    array.push ( c_array, #3DFF00 ), array.push ( c_array, #47FF00 ),
+    array.push ( c_array, #52FF00 ), array.push ( c_array, #5CFF00 ),
+    array.push ( c_array, #66FF00 ), array.push ( c_array, #70FF00 ),
+    array.push ( c_array, #7AFF00 ), array.push ( c_array, #85FF00 ),
+    array.push ( c_array, #8FFF00 ), array.push ( c_array, #99FF00 ),
+    array.push ( c_array, #A3FF00 ), array.push ( c_array, #ADFF00 ),
+    array.push ( c_array, #B8FF00 ), array.push ( c_array, #C2FF00 ),
+    array.push ( c_array, #CCFF00 ), array.push ( c_array, #D6FF00 ),
+    array.push ( c_array, #E0FF00 ), array.push ( c_array, #EBFF00 ),
+    array.push ( c_array, #F5FF00 ), array.push ( c_array, #FFFF00 ),
+    array.push ( c_array, #FFF500 ), array.push ( c_array, #FFEB00 ),
+    array.push ( c_array, #FFE000 ), array.push ( c_array, #FFD600 ),
+    array.push ( c_array, #FFCC00 ), array.push ( c_array, #FFC200 ),
+    array.push ( c_array, #FFB800 ), array.push ( c_array, #FFAD00 ),
+    array.push ( c_array, #FFA300 ), array.push ( c_array, #FF9900 ),
+    array.push ( c_array, #FF8F00 ), array.push ( c_array, #FF8500 ),
+    array.push ( c_array, #FF7A00 ), array.push ( c_array, #FF7000 ),
+    array.push ( c_array, #FF6600 ), array.push ( c_array, #FF5C00 ),
+    array.push ( c_array, #FF5200 ), array.push ( c_array, #FF4700 ),
+    array.push ( c_array, #FF3D00 ), array.push ( c_array, #FF3300 ),
+    array.push ( c_array, #FF2900 ), array.push ( c_array, #FF1F00 ),
+    array.push ( c_array, #FF1400 ), array.push ( c_array, #FF0000 ),
+    array.push ( c_array, #FF0000 )
+
+    c_array
