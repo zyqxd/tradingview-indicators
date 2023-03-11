@@ -1,0 +1,45 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © jdehorty
+//@version=5
+strategy("DZ Backtest Adapter",
+              shorttitle = "DZ-backtest",
+              overlay = true,
+              precision = 2,
+              pyramiding = 0,
+              initial_capital = 10000,
+              currency = currency.NONE,
+              default_qty_type = strategy.percent_of_equity,
+              default_qty_value = 100,
+              commission_type = "percent",
+              commission_value = 0.06)
+
+useDateFilter = input.bool(true, title="Begin Backtest at Start Date", group="Backtest Time Period")
+backtestStartDate = input.time(timestamp("11 May 2022"), title="Start Date", group="Backtest Time Period")
+inTradeWindow = not useDateFilter or time >= backtestStartDate
+
+src = input.source(title="Source", defval=close, tooltip="Source of the input data", group="General Settings")
+
+// Set up your entry and exit conditions for positions based on the indicator stream.
+// The values here must correspond to the values in the Source indicator.
+startLongTrade = src == 1
+endLongTrade = src == 2
+startShortTrade = src == -1
+endShortTrade = src == -2
+
+color = startLongTrade ?  color.green : endLongTrade ?  color.aqua : startShortTrade ?  color.red : endShortTrade ?  color.purple : na
+
+bgcolor(color = color.new(color, 50))
+
+if startLongTrade and inTradeWindow
+    strategy.entry("long", strategy.long)
+
+if endLongTrade and strategy.position_size > 0 and inTradeWindow
+    strategy.close_all()
+    // strategy.exit("1", "long")
+
+if startShortTrade and inTradeWindow
+    strategy.entry("short", strategy.short)
+
+if endShortTrade and strategy.position_size < 0 and inTradeWindow
+    strategy.close_all()
+    // strategy.exit("1", "short")
