@@ -13,33 +13,56 @@ strategy("DZ Backtest Adapter",
               commission_type = "percent",
               commission_value = 0.06)
 
-useDateFilter = input.bool(true, title="Begin Backtest at Start Date", group="Backtest Time Period")
-backtestStartDate = input.time(timestamp("11 May 2022"), title="Start Date", group="Backtest Time Period")
-inTradeWindow = not useDateFilter or time >= backtestStartDate
+var start = timestamp("1 Jan 2020")
 
-src = input.source(title="Source", defval=close, tooltip="Source of the input data", group="General Settings")
+i_use_date_filter = input.bool  (true,  title="Begin Backtest at Start Date", group="Backtest Time Period")
+i_backtest_start  = input.time  (start, title="Start Date",                   group="Backtest Time Period")
 
-// Set up your entry and exit conditions for positions based on the indicator stream.
-// The values here must correspond to the values in the Source indicator.
-startLongTrade = src == 1
-endLongTrade = src == 2
-startShortTrade = src == -1
-endShortTrade = src == -2
+i_pivot_left      = input.int   (15,    title="Pivot Left Bars",              group="General Settings")
+i_pivot_right     = input.int   (15,    title="Pivot Right Bars",             group="General Settings")
+i_entry_src       = input.source(close, title="Source",                       group="General Settings")
+i_risk_reward     = input.float (2.0,   title="Risk Reward Ratio",            group="General Settings")
 
-color = startLongTrade ?  color.green : endLongTrade ?  color.aqua : startShortTrade ?  color.red : endShortTrade ?  color.purple : na
+// NOTE(DZ): Currently this is not allowed
+// https://www.tradingview.com/support/solutions/43000474048-how-do-i-apply-an-indicator-or-strategy-to-another-indicator/
+// i_long_stop_src   = input.source(open,  title="Long Stop loss source",        group="General Settings")
+// i_short_stop_src  = input.source(open,  title="Short Stop loss source",       group="General Settings")
+// i_long_tp_src     = input.source(open,  title="Long Take profit source",      group="General Settings")
+// i_short_tp_src    = input.source(open,  title="Short Take profit source",     group="General Settings")
 
-bgcolor(color = color.new(color, 50))
+// Stop loss calculations - pivots
+resistance = fixnan(ta.pivothigh(i_pivot_left, i_pivot_right)[1])
+support  = fixnan(ta.pivotlow(i_pivot_left, i_pivot_right)[1])
 
-if startLongTrade and inTradeWindow
+in_trade_window = not i_use_date_filter or time >= i_backtest_start
+
+start_long = strategy.position_size == 0 and i_entry_src == 1 and open > support and in_trade_window
+stop_long = strategy.position_size > 0 and close < support and barstate.isconfirmed
+start_short = strategy.position_size == 0 and i_entry_src == -1 and open < resistance and in_trade_window
+stop_short = strategy.position_size < 0 and close > resistance and barstate.isconfirmed
+
+bgcolor(color = color.new(start_long ? color.green : stop_long ?  color.aqua : start_short ?  color.red : stop_short ?  color.purple : na, 50))
+plot(resistance, color=ta.change(resistance) ? na : #FF0000, linewidth=3, offset=-(i_pivot_right+1), title="Resistance")
+plot(support, color=ta.change(support) ? na : #233dee, linewidth=3, offset=-(i_pivot_right+1), title="Support")
+
+if start_long
     strategy.entry("long", strategy.long)
 
-if endLongTrade and strategy.position_size > 0 and inTradeWindow
-    strategy.close_all()
-    // strategy.exit("1", "long")
+if strategy.position_size > 0
+    risk = strategy.position_avg_price - support
+    reward = strategy.position_avg_price + risk * i_risk_reward
+    strategy.exit("1", "long", qty_percent=100, limit=reward, comment="⭐️")
 
-if startShortTrade and inTradeWindow
+if stop_long
+    strategy.close_all(comment="🛑 long")
+
+if start_short
     strategy.entry("short", strategy.short)
 
-if endShortTrade and strategy.position_size < 0 and inTradeWindow
-    strategy.close_all()
-    // strategy.exit("1", "short")
+if strategy.position_size < 0
+    risk = resistance - strategy.position_avg_price
+    reward = strategy.position_avg_price - risk * i_risk_reward
+    strategy.exit("1", "short", qty_percent=100, limit=reward, comment="⭐️")
+
+if stop_short
+    strategy.close_all(comment="🛑 short")
