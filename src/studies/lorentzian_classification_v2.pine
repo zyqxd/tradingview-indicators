@@ -513,14 +513,10 @@ endShortTrade = settings.useDynamicExits and isDynamicExitValid ? endShortTradeD
 // =========================
 
 // Note: These will not repaint once the most recent bar has fully closed. By default, signals appear over the last closed bar; to override this behavior set offset=0.
-// plotshape(startLongTrade ? low : na, 'Buy', shape.labelup, location.belowbar, color=ml.color_green(prediction), size=size.small, offset=0)
-// plotshape(startShortTrade ? high : na, 'Sell', shape.labeldown, location.abovebar, ml.color_red(-prediction), size=size.small, offset=0)
-// plotshape(endLongTrade and settings.showExits ? high : na, 'StopBuy', shape.xcross, location.absolute, color=#3AFF17, size=size.tiny, offset=0)
-// plotshape(endShortTrade and settings.showExits ? low : na, 'StopSell', shape.xcross, location.absolute, color=#FD1707, size=size.tiny, offset=0)
-bgcolor(color = startLongTrade ? color.green : na)
-bgcolor(color = startShortTrade ? color.red : na)
-bgcolor(color = endLongTrade ? color.aqua : na)
-bgcolor(color = endShortTrade ? color.purple: na)
+color = settings.showExits ?
+      (startLongTrade ? color.green : startShortTrade ? color.red : endLongTrade ? color.aqua : endShortTrade ? color.purple : na) :
+      (startLongTrade ? color.green : startShortTrade ? color.red : na)
+bgcolor(color = color.new(color, 50), title = 'Trades')
 
 // ================
 // ==== Alerts ====
