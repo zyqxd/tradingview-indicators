@@ -1,0 +1,18 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © zyqxd
+
+//@version=5
+indicator("My script", overlay = false)
+
+f_pmarp ( _price, _pmarLen, _pmarpLen ) =>
+    _pmar = math.abs ( _price / ta.vwma ( _price, _pmarLen ))
+    _pmarpSum = 0
+    _len = bar_index < _pmarpLen ? bar_index : _pmarpLen
+    for i = 1 to _len by 1
+        _pmarpSum += ( _pmar[i] > _pmar ? 0 : 1 )
+        _pmarpSum
+    _return = bar_index >= _pmarLen ? _pmarpSum / _len * 100 : na
+
+pmarp       = f_pmarp ( close, 20, 350, "VWMA" )
+
+plot(pmarp, title="PMARP")

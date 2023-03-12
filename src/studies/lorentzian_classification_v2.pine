@@ -178,6 +178,16 @@ bbwp( _close, bb_len, bbw_lookback ) =>
     val = ( _bbw_sum / bbw_lookback ) * 100
     ml.rescale(val, 0, 100, 0, 1)
 
+f_pmarp( _price, _pmarLen, _pmarpLen ) =>
+    _pmar = math.abs ( _price / ta.vwma ( _price, _pmarLen ))
+    _pmarpSum = 0
+    _len = bar_index < _pmarpLen ? bar_index : _pmarpLen
+    for i = 1 to _len by 1
+        _pmarpSum += ( _pmar[i] > _pmar ? 0 : 1 )
+        _pmarpSum
+    val = _pmarpSum / _len * 100
+    ml.rescale(val, 0, 100, 0, 1)
+
 series_from(feature_string, _close, _high, _low, _hlc3, f_paramA, f_paramB) =>
     switch feature_string
         "RSI" => ml.n_rsi(_close, f_paramA, f_paramB)
@@ -185,6 +195,7 @@ series_from(feature_string, _close, _high, _low, _hlc3, f_paramA, f_paramB) =>
         "CCI" => ml.n_cci(_close, f_paramA, f_paramB)
         "ADX" => ml.n_adx(_high, _low, _close, f_paramA)
         "BBWP" => bbwp(_close, f_paramA, f_paramB)
+        "PMARP" => f_pmarp (_close, f_paramA, f_paramB)
 
 get_lorentzian_distance(int i, int featureCount, FeatureSeries featureSeries, FeatureArrays featureArrays) =>
     switch featureCount
@@ -243,19 +254,19 @@ Filter filter =
   )
 
 // Feature Variables: User-Defined Inputs for calculating Feature Series.
-f1_string = input.string(title="Feature 1", options=["RSI", "WT", "CCI", "ADX", "BBWP"], defval="RSI", inline = "01", tooltip="The first feature to use for ML predictions.", group="Feature Engineering")
+f1_string = input.string(title="Feature 1", options=["RSI", "WT", "CCI", "ADX", "BBWP", "PMARP"], defval="RSI", inline = "01", tooltip="The first feature to use for ML predictions.", group="Feature Engineering")
 f1_paramA = input.int(title="Parameter A", tooltip="The primary parameter of feature 1.", defval=14, inline = "02", group="Feature Engineering")
 f1_paramB = input.int(title="Parameter B", tooltip="The secondary parameter of feature 2 (if applicable).", defval=1, inline = "02", group="Feature Engineering")
-f2_string = input.string(title="Feature 2", options=["RSI", "WT", "CCI", "ADX", "BBWP"], defval="WT", inline = "03", tooltip="The second feature to use for ML predictions.", group="Feature Engineering")
+f2_string = input.string(title="Feature 2", options=["RSI", "WT", "CCI", "ADX", "BBWP", "PMARP"], defval="WT", inline = "03", tooltip="The second feature to use for ML predictions.", group="Feature Engineering")
 f2_paramA = input.int(title="Parameter A", tooltip="The primary parameter of feature 2.", defval=10, inline = "04", group="Feature Engineering")
 f2_paramB = input.int(title="Parameter B", tooltip="The secondary parameter of feature 2 (if applicable).", defval=11, inline = "04", group="Feature Engineering")
-f3_string = input.string(title="Feature 3", options=["RSI", "WT", "CCI", "ADX", "BBWP"], defval="CCI", inline = "05", tooltip="The third feature to use for ML predictions.", group="Feature Engineering")
+f3_string = input.string(title="Feature 3", options=["RSI", "WT", "CCI", "ADX", "BBWP", "PMARP"], defval="CCI", inline = "05", tooltip="The third feature to use for ML predictions.", group="Feature Engineering")
 f3_paramA = input.int(title="Parameter A", tooltip="The primary parameter of feature 3.", defval=20, inline = "06", group="Feature Engineering")
 f3_paramB = input.int(title="Parameter B", tooltip="The secondary parameter of feature 3 (if applicable).", defval=1, inline = "06", group="Feature Engineering")
-f4_string = input.string(title="Feature 4", options=["RSI", "WT", "CCI", "ADX", "BBWP"], defval="ADX", inline = "07", tooltip="The fourth feature to use for ML predictions.", group="Feature Engineering")
+f4_string = input.string(title="Feature 4", options=["RSI", "WT", "CCI", "ADX", "BBWP", "PMARP"], defval="ADX", inline = "07", tooltip="The fourth feature to use for ML predictions.", group="Feature Engineering")
 f4_paramA = input.int(title="Parameter A", tooltip="The primary parameter of feature 4.", defval=20, inline = "08", group="Feature Engineering")
 f4_paramB = input.int(title="Parameter B", tooltip="The secondary parameter of feature 4 (if applicable).", defval=2, inline = "08", group="Feature Engineering")
-f5_string = input.string(title="Feature 5", options=["RSI", "WT", "CCI", "ADX", "BBWP"], defval="RSI", inline = "09", tooltip="The fifth feature to use for ML predictions.", group="Feature Engineering")
+f5_string = input.string(title="Feature 5", options=["RSI", "WT", "CCI", "ADX", "BBWP", "PMARP"], defval="RSI", inline = "09", tooltip="The fifth feature to use for ML predictions.", group="Feature Engineering")
 f5_paramA = input.int(title="Parameter A", tooltip="The primary parameter of feature 5.", defval=9, inline = "10", group="Feature Engineering")
 f5_paramB = input.int(title="Parameter B", tooltip="The secondary parameter of feature 5 (if applicable).", defval=1, inline = "10", group="Feature Engineering")
 
