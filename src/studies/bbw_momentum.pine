@@ -1,0 +1,20 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © zyqxd
+
+//@version=5
+indicator("Bollinger Band Width and Momentum", overlay=false, shorttitle = "DZ-bbwm", precision=3)
+
+bb_len = 20
+basis = ta.sma(close, bb_len)
+stdev_2 = 2 * ta.stdev(close, bb_len)
+
+upper = basis + stdev_2
+lower = basis - stdev_2
+
+bb_width = (upper - lower)
+bb_width_basis = bb_width / basis * 100
+bb_width_deriv = bb_width_basis - bb_width_basis[1]
+
+// plot(bb_width, "BB Width", color = color.red, linewidth = 2, style = plot.style_line)
+plot(bb_width_basis, "BB Width Basis", color = color.red, linewidth = 2, style = plot.style_line)
+plot(bb_width_deriv, "BB Width Deriv", color = color.blue, linewidth = 2, style = plot.style_line)
