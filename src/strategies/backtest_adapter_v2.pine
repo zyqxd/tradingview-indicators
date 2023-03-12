@@ -36,10 +36,10 @@ support  = fixnan(ta.pivotlow(i_pivot_left, i_pivot_right)[1])
 
 in_trade_window = not i_use_date_filter or time >= i_backtest_start
 
-start_long = strategy.position_size == 0 and i_entry_src == 1 and open > support and in_trade_window
-stop_long = strategy.position_size > 0 and close < support and barstate.isconfirmed
-start_short = strategy.position_size == 0 and i_entry_src == -1 and open < resistance and in_trade_window
-stop_short = strategy.position_size < 0 and close > resistance and barstate.isconfirmed
+start_long = strategy.position_size == 0 and i_entry_src == 1 and in_trade_window
+stop_long = strategy.position_size > 0 and i_entry_src == 2
+start_short = strategy.position_size == 0 and i_entry_src == -1 and in_trade_window
+stop_short = strategy.position_size < 0 and i_entry_src == -2
 
 bgcolor(color = color.new(start_long ? color.green : stop_long ?  color.aqua : start_short ?  color.red : stop_short ?  color.purple : na, 50))
 plot(resistance, color=ta.change(resistance) ? na : #FF0000, linewidth=3, offset=-(i_pivot_right+1), title="Resistance")
@@ -48,21 +48,11 @@ plot(support, color=ta.change(support) ? na : #233dee, linewidth=3, offset=-(i_p
 if start_long
     strategy.entry("🟢", strategy.long)
 
-if strategy.position_size > 0
-    risk = strategy.position_avg_price - support
-    reward = strategy.position_avg_price + risk * i_risk_reward
-    strategy.exit("1", "long", qty_percent=100, limit=reward, comment="⭐️")
-
 if stop_long
     strategy.close_all(comment="🛑")
 
 if start_short
-    strategy.entry("short", strategy.short)
-
-if strategy.position_size < 0
-    risk = resistance - strategy.position_avg_price
-    reward = strategy.position_avg_price - risk * i_risk_reward
-    strategy.exit("🟣", "short", qty_percent=100, limit=reward, comment="⭐️")
+    strategy.entry("🟣", strategy.short)
 
 if stop_short
     strategy.close_all(comment="🛑")

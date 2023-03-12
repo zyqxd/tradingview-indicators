@@ -168,16 +168,15 @@ type Filter
 // ==========================
 // ==== Helper Functions ====
 // ==========================
-bbw_d( _close, bb_len, stdev_multi ) =>
-    basis = ta.sma(_close, bb_len)
-    stdev_2 = 2 * ta.stdev(_close, bb_len)
-
-    upper = basis + stdev_2
-    lower = basis - stdev_2
-
-    bb_width = (upper - lower)
-    bb_width_basis = bb_width / basis * 100
-    bb_width_basis - bb_width_basis[1]
+bbwp( _close, bb_len, bbw_lookback ) =>
+    float basis = ta.sma(_close, bb_len)
+    float dev = ta.stdev(_close, bb_len)
+    _bbw = (( basis + dev ) - ( basis - dev )) / basis
+    _bbw_sum = 0
+    for i = 1 to bbw_lookback
+        _bbw_sum := _bbw_sum + ( _bbw [i] > _bbw ? 0 : 1 )
+    val = ( _bbw_sum / bbw_lookback ) * 100
+    ml.rescale(val, 0, 100, 0, 1)
 
 series_from(feature_string, _close, _high, _low, _hlc3, f_paramA, f_paramB) =>
     switch feature_string
@@ -185,7 +184,7 @@ series_from(feature_string, _close, _high, _low, _hlc3, f_paramA, f_paramB) =>
         "WT" => ml.n_wt(_hlc3, f_paramA, f_paramB)
         "CCI" => ml.n_cci(_close, f_paramA, f_paramB)
         "ADX" => ml.n_adx(_high, _low, _close, f_paramA)
-        "BBW_D" => bbw_d(_close, f_paramA, f_paramB)
+        "BBWP" => bbwp(_close, f_paramA, f_paramB)
 
 get_lorentzian_distance(int i, int featureCount, FeatureSeries featureSeries, FeatureArrays featureArrays) =>
     switch featureCount
@@ -244,19 +243,19 @@ Filter filter =
   )
 
 // Feature Variables: User-Defined Inputs for calculating Feature Series.
-f1_string = input.string(title="Feature 1", options=["RSI", "WT", "CCI", "ADX", "BBW_D"], defval="RSI", inline = "01", tooltip="The first feature to use for ML predictions.", group="Feature Engineering")
+f1_string = input.string(title="Feature 1", options=["RSI", "WT", "CCI", "ADX", "BBWP"], defval="RSI", inline = "01", tooltip="The first feature to use for ML predictions.", group="Feature Engineering")
 f1_paramA = input.int(title="Parameter A", tooltip="The primary parameter of feature 1.", defval=14, inline = "02", group="Feature Engineering")
 f1_paramB = input.int(title="Parameter B", tooltip="The secondary parameter of feature 2 (if applicable).", defval=1, inline = "02", group="Feature Engineering")
-f2_string = input.string(title="Feature 2", options=["RSI", "WT", "CCI", "ADX", "BBW_D"], defval="WT", inline = "03", tooltip="The second feature to use for ML predictions.", group="Feature Engineering")
+f2_string = input.string(title="Feature 2", options=["RSI", "WT", "CCI", "ADX", "BBWP"], defval="WT", inline = "03", tooltip="The second feature to use for ML predictions.", group="Feature Engineering")
 f2_paramA = input.int(title="Parameter A", tooltip="The primary parameter of feature 2.", defval=10, inline = "04", group="Feature Engineering")
 f2_paramB = input.int(title="Parameter B", tooltip="The secondary parameter of feature 2 (if applicable).", defval=11, inline = "04", group="Feature Engineering")
-f3_string = input.string(title="Feature 3", options=["RSI", "WT", "CCI", "ADX", "BBW_D"], defval="CCI", inline = "05", tooltip="The third feature to use for ML predictions.", group="Feature Engineering")
+f3_string = input.string(title="Feature 3", options=["RSI", "WT", "CCI", "ADX", "BBWP"], defval="CCI", inline = "05", tooltip="The third feature to use for ML predictions.", group="Feature Engineering")
 f3_paramA = input.int(title="Parameter A", tooltip="The primary parameter of feature 3.", defval=20, inline = "06", group="Feature Engineering")
 f3_paramB = input.int(title="Parameter B", tooltip="The secondary parameter of feature 3 (if applicable).", defval=1, inline = "06", group="Feature Engineering")
-f4_string = input.string(title="Feature 4", options=["RSI", "WT", "CCI", "ADX", "BBW_D"], defval="ADX", inline = "07", tooltip="The fourth feature to use for ML predictions.", group="Feature Engineering")
+f4_string = input.string(title="Feature 4", options=["RSI", "WT", "CCI", "ADX", "BBWP"], defval="ADX", inline = "07", tooltip="The fourth feature to use for ML predictions.", group="Feature Engineering")
 f4_paramA = input.int(title="Parameter A", tooltip="The primary parameter of feature 4.", defval=20, inline = "08", group="Feature Engineering")
 f4_paramB = input.int(title="Parameter B", tooltip="The secondary parameter of feature 4 (if applicable).", defval=2, inline = "08", group="Feature Engineering")
-f5_string = input.string(title="Feature 5", options=["RSI", "WT", "CCI", "ADX", "BBW_D"], defval="RSI", inline = "09", tooltip="The fifth feature to use for ML predictions.", group="Feature Engineering")
+f5_string = input.string(title="Feature 5", options=["RSI", "WT", "CCI", "ADX", "BBWP"], defval="RSI", inline = "09", tooltip="The fifth feature to use for ML predictions.", group="Feature Engineering")
 f5_paramA = input.int(title="Parameter A", tooltip="The primary parameter of feature 5.", defval=9, inline = "10", group="Feature Engineering")
 f5_paramB = input.int(title="Parameter B", tooltip="The secondary parameter of feature 5 (if applicable).", defval=1, inline = "10", group="Feature Engineering")
 
@@ -503,10 +502,14 @@ endShortTrade = settings.useDynamicExits and isDynamicExitValid ? endShortTradeD
 // =========================
 
 // Note: These will not repaint once the most recent bar has fully closed. By default, signals appear over the last closed bar; to override this behavior set offset=0.
-plotshape(startLongTrade ? low : na, 'Buy', shape.labelup, location.belowbar, color=ml.color_green(prediction), size=size.small, offset=0)
-plotshape(startShortTrade ? high : na, 'Sell', shape.labeldown, location.abovebar, ml.color_red(-prediction), size=size.small, offset=0)
-plotshape(endLongTrade and settings.showExits ? high : na, 'StopBuy', shape.xcross, location.absolute, color=#3AFF17, size=size.tiny, offset=0)
-plotshape(endShortTrade and settings.showExits ? low : na, 'StopSell', shape.xcross, location.absolute, color=#FD1707, size=size.tiny, offset=0)
+// plotshape(startLongTrade ? low : na, 'Buy', shape.labelup, location.belowbar, color=ml.color_green(prediction), size=size.small, offset=0)
+// plotshape(startShortTrade ? high : na, 'Sell', shape.labeldown, location.abovebar, ml.color_red(-prediction), size=size.small, offset=0)
+// plotshape(endLongTrade and settings.showExits ? high : na, 'StopBuy', shape.xcross, location.absolute, color=#3AFF17, size=size.tiny, offset=0)
+// plotshape(endShortTrade and settings.showExits ? low : na, 'StopSell', shape.xcross, location.absolute, color=#FD1707, size=size.tiny, offset=0)
+bgcolor(color = startLongTrade ? color.green : na)
+bgcolor(color = startShortTrade ? color.red : na)
+bgcolor(color = endLongTrade ? color.aqua : na)
+bgcolor(color = endShortTrade ? color.purple: na)
 
 // ================
 // ==== Alerts ====
