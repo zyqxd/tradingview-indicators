@@ -46,7 +46,7 @@ plot(resistance, color=ta.change(resistance) ? na : #FF0000, linewidth=3, offset
 plot(support, color=ta.change(support) ? na : #233dee, linewidth=3, offset=-(i_pivot_right+1), title="Support")
 
 if start_long
-    strategy.entry("long", strategy.long)
+    strategy.entry("🟢", strategy.long)
 
 if strategy.position_size > 0
     risk = strategy.position_avg_price - support
@@ -54,7 +54,7 @@ if strategy.position_size > 0
     strategy.exit("1", "long", qty_percent=100, limit=reward, comment="⭐️")
 
 if stop_long
-    strategy.close_all(comment="🛑 long")
+    strategy.close_all(comment="🛑")
 
 if start_short
     strategy.entry("short", strategy.short)
@@ -62,7 +62,7 @@ if start_short
 if strategy.position_size < 0
     risk = resistance - strategy.position_avg_price
     reward = strategy.position_avg_price - risk * i_risk_reward
-    strategy.exit("1", "short", qty_percent=100, limit=reward, comment="⭐️")
+    strategy.exit("🟣", "short", qty_percent=100, limit=reward, comment="⭐️")
 
 if stop_short
-    strategy.close_all(comment="🛑 short")
+    strategy.close_all(comment="🛑")
