@@ -1,9 +1,7 @@
 //@version=5
-// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// This source code is subject to the terms of the Mozilla Public License 2.0 at
+// https://mozilla.org/MPL/2.0/
 // © zyqxd
-
-// TODO(DZ): Array calculation does not work, figure out a way to calculate
-// from a series?
 
 strategy(title="Nadaraya-Watson (Kernel) Strategy",
      shorttitle="kernel-strat",
@@ -20,64 +18,37 @@ strategy(title="Nadaraya-Watson (Kernel) Strategy",
 var default_from = timestamp("1 Jan 2022 00:00 -0500")
 var up_col = #39ff14
 var dn_col = #ff1100
-
-// --- Input: Backtest parameters
-i_test_bars  = input.int(500,'Test Window Size',maxval=2000,minval=0)
+var chn_col = #ffffff
 
 // --- Input: Kernel regression parameters
-i_bandwidth  = input.float(8., 'Bandwidth')
-i_multiplier = input.float(3., 'Band multiplier')
-i_k          = input.int(2, 'K')
+i_bandwidth  = input.float(8., 'Bandwidth (rec. 3-50)')
+i_lookback   = input.int(500, 'Lookback window')
+i_multiplier = input.float(3., 'Band width multiplier')
 
-//---- WIP
-var upper = array.new_float(0)
-var lower = array.new_float(0)
-var middle = array.new_float(0)
-var start_bar_index = last_bar_index - i_test_bars
-var y = array.new_float(0)
+guassian(_src, _bandwidth, _lookback) =>
+    float _current_weight = 0.
+    float _cumulative_weight = 0.
 
-if barstate.isfirst
-    for i = 0 to last_bar_index - 1
-        array.push(upper, na)
-        array.push(lower, na)
-        array.push(middle, na)
+    for i = 0 to _lookback
+        w = math.exp(-(i * i) / (2 * _bandwidth * _bandwidth))
 
-if barstate.islast
-    sum_e = 0.
-    for i = start_bar_index to last_bar_index - 1
-        array.set(upper, i, 1)
-        array.set(lower, i, 1)
-        array.set(middle, i, 1)
+        _current_weight += _src[i] * w
+        _cumulative_weight += w
 
-    // for i = start_bar_index to last_bar_index - 1
-    //     sum = 0.
-    //     sum_w = 0.
+    _current_weight / _cumulative_weight
 
-    //     for j = start_bar_index to last_bar_index - 1
-    //         w = math.exp(-(math.pow(i - j, 2) / (i_bandwidth * i_bandwidth * 2)))
-    //         sum += close[last_bar_index - i] * w
-    //         sum_w += w
+kernel = guassian(close, i_bandwidth, i_lookback)
+dir = (kernel > kernel[1] and kernel[1] < kernel[2])
+        or (kernel < kernel[1] and kernel[1] > kernel[2]) ? 0 :
+          kernel > kernel[1] ? 1 : -1
 
-    //     y_val = sum / sum_w
-    //     sum_e += math.abs(close[last_bar_index - i] - y_val)
-    //     array.push(y, y_val)
+col = color.new(dir == 1 ? up_col : dir == -1 ? dn_col : chn_col, 0)
 
-    // mean_e = sum_e * i_multiplier / i_test_bars
+plot(kernel, color=col, style=plot.style_line, linewidth=2, title='Middle')
 
-    // for i = 0 to i_test_bars - 1
-    //     y_val = array.get(y, i)
-
-    //     array.set(upper, start_bar_index + i, y_val + mean_e)
-    //     array.set(lower, start_bar_index + i, y_val - mean_e)
-    //     array.set(middle, start_bar_index + i, y_val)
-
-// var upper_line = array.get(upper, bar_index)
-// var lower_line = array.get(lower, bar_index)
-// var middle_line = array.get(middle, bar_index)
-plot(upper, color=up_col, style=plot.style_line, linewidth=2, title='Upper')
-// plot(lower_line, color=dn_col, style=plot.style_line, linewidth=2, title='Lower')
-// plot(middle_line, color=#ffffff, style=plot.style_line, linewidth=2, title='Middle')
-
-plot(bar_index)
-plot(last_bar_index)
-plot(start_bar_index)
+if dir == 1 and strategy.position_size == 0
+    strategy.entry("long", strategy.long, comment="🔼🟢")
+else if dir == -1 and strategy.position_size == 0
+    strategy.entry("short", strategy.short, comment="🔽🔴")
+else if dir == 0 and strategy.position_size != 0
+    strategy.close_all(comment='🔽⚠️')
